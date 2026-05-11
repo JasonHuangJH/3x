@@ -31,6 +31,7 @@ const props = defineProps({
   onlineClients: { type: Array, default: () => [] },
   lastOnlineMap: { type: Object, default: () => ({}) },
   isDarkTheme: { type: Boolean, default: false },
+  pageSize: { type: Number, default: 0 },
 });
 
 const emit = defineEmits([
@@ -45,6 +46,20 @@ const emit = defineEmits([
 
 const inbound = computed(() => props.dbInbound.toInbound());
 const clients = computed(() => inbound.value?.clients || []);
+
+const currentPage = ref(1);
+const paginatedClients = computed(() => {
+  if (!props.pageSize || props.pageSize <= 0) return clients.value;
+  const start = (currentPage.value - 1) * props.pageSize;
+  return clients.value.slice(start, start + props.pageSize);
+});
+
+watch([clients, () => props.pageSize], () => {
+  const total = clients.value.length;
+  const size = props.pageSize > 0 ? props.pageSize : (total || 1);
+  const maxPage = Math.max(1, Math.ceil(total / size));
+  if (currentPage.value > maxPage) currentPage.value = maxPage;
+});
 
 // === Per-client stats lookup =======================================
 const statsMap = computed(() => {
@@ -204,14 +219,30 @@ watch(clients, (list) => {
 function confirmBulkDelete() {
   const picked = clients.value.filter((c) => selected.value.has(rowKey(c)));
   if (picked.length === 0) return;
+
+  const total = clients.value.length;
+  const keepLast = picked.length === total;
+  const toDelete = keepLast ? picked.slice(0, -1) : picked;
+
+  if (toDelete.length === 0) {
+    Modal.warning({
+      title: t('pages.inbounds.deleteClient'),
+      content: 'Inbound must keep at least one client — delete the inbound to remove all.',
+      okText: t('confirm'),
+    });
+    return;
+  }
+
   Modal.confirm({
-    title: t('pages.inbounds.deleteClient') + ` — ${picked.length}`,
-    content: t('pages.inbounds.deleteClientContent'),
+    title: `${t('pages.inbounds.deleteClient')} — ${toDelete.length}${keepLast ? ` / ${total}` : ''}`,
+    content: keepLast
+      ? 'Inbound must keep at least one client — the last selected will remain. Delete the inbound to remove all.'
+      : t('pages.inbounds.deleteClientContent'),
     okText: t('delete'),
     okType: 'danger',
     cancelText: t('cancel'),
     onOk: () => {
-      emit('delete-clients', { dbInbound: props.dbInbound, clients: picked });
+      emit('delete-clients', { dbInbound: props.dbInbound, clients: toDelete });
       clearSelection();
     },
   });
@@ -246,7 +277,7 @@ function confirmBulkDelete() {
         <div class="cell cell-expiry">{{ t('pages.inbounds.expireDate') }}</div>
       </div>
 
-      <div v-for="client in clients" :key="rowKey(client)" class="client-row"
+      <div v-for="client in paginatedClients" :key="rowKey(client)" class="client-row"
         :class="{ 'is-selected': isSelected(rowKey(client)) }">
         <div v-if="isRemovable" class="cell cell-select">
           <a-checkbox :checked="isSelected(rowKey(client))"
@@ -383,7 +414,7 @@ function confirmBulkDelete() {
 
     <!-- ====================== Mobile: card list ======================= -->
     <template v-else>
-      <div v-for="client in clients" :key="rowKey(client)" class="client-card"
+      <div v-for="client in paginatedClients" :key="rowKey(client)" class="client-card"
         :class="{ 'is-selected': isSelected(rowKey(client)) }">
         <div class="client-card-head">
           <a-checkbox v-if="isRemovable" :checked="isSelected(rowKey(client))"
@@ -474,6 +505,10 @@ function confirmBulkDelete() {
         </div>
       </div>
     </template>
+
+    <a-pagination v-if="pageSize > 0 && clients.length > pageSize" v-model:current="currentPage"
+      :page-size="pageSize" :total="clients.length" :show-size-changer="false" size="small"
+      class="client-list-pagination" />
   </div>
 </template>
 
@@ -685,6 +720,12 @@ function confirmBulkDelete() {
  * sits flush against the inbound row's left/right edges. */
 :deep(.ant-table-expanded-row > .ant-table-cell) {
   padding: 0 !important;
+}
+
+.client-list-pagination {
+  display: flex;
+  justify-content: center;
+  padding: 10px 16px 4px;
 }
 
 /* ===== Mobile card list =========================================== */
