@@ -1,5 +1,5 @@
 import { defineConfig } from 'vite';
-import vue from '@vitejs/plugin-vue';
+import react from '@vitejs/plugin-react';
 import fs from 'node:fs';
 import path from 'node:path';
 import { DatabaseSync } from 'node:sqlite';
@@ -22,22 +22,7 @@ function resolveDBPath() {
   return '/etc/x-ui/x-ui.db';
 }
 
-const BASE_MIGRATED_ROUTES = {
-  'panel': '/index.html',
-  'panel/': '/index.html',
-  'panel/settings': '/settings.html',
-  'panel/settings/': '/settings.html',
-  'panel/inbounds': '/inbounds.html',
-  'panel/inbounds/': '/inbounds.html',
-  'panel/clients': '/clients.html',
-  'panel/clients/': '/clients.html',
-  'panel/xray': '/xray.html',
-  'panel/xray/': '/xray.html',
-  'panel/nodes': '/nodes.html',
-  'panel/nodes/': '/nodes.html',
-  'panel/api-docs': '/api-docs.html',
-  'panel/api-docs/': '/api-docs.html',
-};
+const PANEL_API_PREFIXES = ['panel/api/', 'panel/setting/', 'panel/xray/', 'panel/csrf-token'];
 
 let cachedBasePath = '/';
 
@@ -67,8 +52,17 @@ function refreshBasePath() {
   return cachedBasePath;
 }
 
+function readPanelVersion() {
+  try {
+    const versionFile = path.resolve(__dirname, '..', 'config', 'version');
+    return fs.readFileSync(versionFile, 'utf8').trim();
+  } catch (_e) {
+    return '';
+  }
+}
+
 // `apply: 'serve'` keeps the injection out of `vite build` — dist.go
-// already injects webBasePath at runtime in production.
+// already injects webBasePath and version at runtime in production.
 function injectBasePathPlugin() {
   return {
     name: 'xui-inject-base-path',
@@ -76,7 +70,8 @@ function injectBasePathPlugin() {
     transformIndexHtml(html) {
       const basePath = refreshBasePath();
       const escaped = basePath.replace(/\\/g, '\\\\').replace(/"/g, '\\"');
-      const tag = `<script>window.X_UI_BASE_PATH="${escaped}";</script>`;
+      const version = readPanelVersion().replace(/\\/g, '\\\\').replace(/"/g, '\\"');
+      const tag = `<script>window.X_UI_BASE_PATH="${escaped}";window.X_UI_CUR_VER="${version}";</script>`;
       return html.replace('</head>', `${tag}</head>`);
     },
   };
@@ -91,7 +86,14 @@ function bypassMigratedRoute(req) {
 
   if (url.startsWith(basePath)) {
     const stripped = url.slice(basePath.length);
-    if (stripped in BASE_MIGRATED_ROUTES) return BASE_MIGRATED_ROUTES[stripped];
+    for (const prefix of PANEL_API_PREFIXES) {
+      if (stripped === prefix.replace(/\/$/, '') || stripped.startsWith(prefix)) {
+        return undefined;
+      }
+    }
+    if (stripped === 'panel' || stripped === 'panel/' || stripped.startsWith('panel/')) {
+      return '/index.html';
+    }
   }
   return undefined;
 }
@@ -136,10 +138,20 @@ function makeBackendProxy(target) {
 }
 
 export default defineConfig({
-  plugins: [vue(), injectBasePathPlugin()],
+  plugins: [react(), injectBasePathPlugin()],
   resolve: {
     alias: {
       '@': path.resolve(__dirname, 'src'),
+    },
+  },
+  experimental: {
+    renderBuiltUrl(filename, { hostType }) {
+      if (hostType === 'js') {
+        return {
+          runtime: `((window.X_UI_BASE_PATH||'/')+${JSON.stringify(filename)})`,
+        };
+      }
+      return undefined;
     },
   },
   build: {
@@ -152,32 +164,47 @@ export default defineConfig({
       input: {
         index: path.resolve(__dirname, 'index.html'),
         login: path.resolve(__dirname, 'login.html'),
-        settings: path.resolve(__dirname, 'settings.html'),
-        inbounds: path.resolve(__dirname, 'inbounds.html'),
-        clients: path.resolve(__dirname, 'clients.html'),
-        xray: path.resolve(__dirname, 'xray.html'),
-        nodes: path.resolve(__dirname, 'nodes.html'),
-        apiDocs: path.resolve(__dirname, 'api-docs.html'),
         subpage: path.resolve(__dirname, 'subpage.html'),
       },
       output: {
         manualChunks(id) {
           if (!id.includes('node_modules')) return undefined;
-          if (id.includes('ant-design-vue')) return 'vendor-antd';
-          if (id.includes('@ant-design/icons-vue')) return 'vendor-icons';
-          if (id.includes('vue-i18n')) return 'vendor-i18n';
+          if (id.includes('/node_modules/antd/')) return 'vendor-antd';
+          if (id.includes('/@ant-design/icons/') || id.includes('/@ant-design/icons-svg/')) return 'vendor-icons';
           if (
-            id.includes('/node_modules/vue/')
-            || id.includes('/node_modules/@vue/')
-          ) return 'vendor-vue';
+            id.includes('/node_modules/@rc-component/')
+            || id.includes('/node_modules/rc-')
+            || id.includes('/@ant-design/cssinjs')
+            || id.includes('/@ant-design/colors')
+            || id.includes('/@ant-design/fast-color')
+            || id.includes('/@ant-design/react-slick')
+            || id.includes('/@ctrl/tinycolor')
+          ) return 'vendor-antd';
+          if (
+            id.includes('/node_modules/react-i18next/')
+            || id.includes('/node_modules/i18next/')
+          ) return 'vendor-i18next';
+          if (
+            id.includes('/node_modules/react/')
+            || id.includes('/node_modules/react-dom/')
+            || id.includes('/node_modules/scheduler/')
+          ) return 'vendor-react';
+          if (
+            id.includes('/node_modules/codemirror/')
+            || id.includes('/node_modules/@codemirror/')
+            || id.includes('/node_modules/@lezer/')
+          ) return 'vendor-codemirror';
+          if (id.includes('/node_modules/persian-calendar-suite/')) return 'vendor-jalali';
+          if (id.includes('/node_modules/otpauth/')) return 'vendor-otpauth';
+          if (id.includes('/node_modules/@tanstack/')) return 'vendor-tanstack';
+          if (id.includes('/node_modules/react-router')) return 'vendor-router';
+          if (
+            id.includes('/node_modules/swagger-ui-react/')
+            || id.includes('/node_modules/swagger-ui/')
+            || id.includes('/node_modules/swagger-client/')
+          ) return 'vendor-swagger';
           if (id.includes('dayjs')) return 'vendor-dayjs';
           if (id.includes('axios')) return 'vendor-axios';
-          if (
-            id.includes('vue3-persian-datetime-picker')
-            || id.includes('moment-jalaali')
-            || id.includes('jalaali-js')
-            || id.includes('/node_modules/moment/')
-          ) return 'vendor-jalali';
           return 'vendor';
         },
       },
