@@ -74,6 +74,7 @@
   align-items: center;
   gap: 8px;
   flex-wrap: wrap;
+  padding: 6px 0;
 }
 
 .email-cell {
@@ -178,7 +179,7 @@
 .card-empty {
   text-align: center;
   padding: 40px 16px;
-  opacity: 0.55;
+  color: var(--ant-color-text-secondary);
   display: flex;
   flex-direction: column;
   align-items: center;
@@ -188,5 +189,5 @@
 .clients-empty {
   padding: 32px 0;
   text-align: center;
-  opacity: 0.55;
+  color: var(--ant-color-text-secondary);
 }

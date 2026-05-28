@@ -26,7 +26,7 @@ import {
   DeleteOutlined,
   MinusOutlined,
   PlusOutlined,
-  SyncOutlined,
+  ReloadOutlined,
 } from '@ant-design/icons';
 
 import { HttpUtil, NumberFormatter, RandomUtil, SizeFormatter, Wireguard } from '@/utils';
@@ -572,6 +572,41 @@ export default function InboundFormModal({
     form.setFieldValue(['streamSettings', 'tlsSettings', 'settings', 'echConfigList'], '');
   };
 
+  const setCertFromPanel = async (certName: number) => {
+    setSaving(true);
+    try {
+      const msg = await HttpUtil.post('/panel/setting/all', undefined, { silent: true });
+      if (msg?.success) {
+        const obj = msg.obj as { webCertFile?: string; webKeyFile?: string };
+        if (!obj.webCertFile && !obj.webKeyFile) {
+          messageApi.warning(t('pages.inbounds.setDefaultCertEmpty'));
+          return;
+        }
+        form.setFieldValue(
+          ['streamSettings', 'tlsSettings', 'certificates', certName, 'certificateFile'],
+          obj.webCertFile ?? '',
+        );
+        form.setFieldValue(
+          ['streamSettings', 'tlsSettings', 'certificates', certName, 'keyFile'],
+          obj.webKeyFile ?? '',
+        );
+      }
+    } finally {
+      setSaving(false);
+    }
+  };
+
+  const clearCertFiles = (certName: number) => {
+    form.setFieldValue(
+      ['streamSettings', 'tlsSettings', 'certificates', certName, 'certificateFile'],
+      '',
+    );
+    form.setFieldValue(
+      ['streamSettings', 'tlsSettings', 'certificates', certName, 'keyFile'],
+      '',
+    );
+  };
+
   const onSecurityChange = async (next: string) => {
     const current = (form.getFieldValue('streamSettings') as Record<string, unknown>) ?? {};
     const cleaned: Record<string, unknown> = { ...current, security: next };
@@ -762,6 +797,18 @@ export default function InboundFormModal({
           security: 'tls',
           hysteriaSettings: HysteriaStreamSettingsSchema.parse({}),
           tlsSettings: tls,
+          // Hysteria2 needs an obfs wrapper on the FinalMask side; seed
+          // it with salamander + a random password so the listener boots
+          // with a usable default. Re-selecting Hysteria from another
+          // protocol re-runs this and refreshes the password — that's
+          // intentional, the form was already being reset.
+          finalmask: {
+            tcp: [],
+            udp: [{
+              type: 'salamander',
+              settings: { password: RandomUtil.randomLowerAndNum(16) },
+            }],
+          },
         });
       } else {
         const current = form.getFieldValue('streamSettings') as { network?: string } | undefined;
@@ -1048,16 +1095,13 @@ export default function InboundFormModal({
     <>
       {protocol === Protocols.WIREGUARD && (
         <>
-          <Form.Item
-            name={['settings', 'secretKey']}
-            label={
-              <>
-                Secret key{' '}
-                <SyncOutlined className="random-icon" onClick={regenInboundWg} />
-              </>
-            }
-          >
-            <Input />
+          <Form.Item label="Secret key">
+            <Space.Compact block>
+              <Form.Item name={['settings', 'secretKey']} noStyle>
+                <Input style={{ width: 'calc(100% - 32px)' }} />
+              </Form.Item>
+              <Button icon={<ReloadOutlined />} onClick={regenInboundWg} />
+            </Space.Compact>
           </Form.Item>
           <Form.Item label="Public key">
             <Input value={wgPubKey} disabled />
@@ -1106,19 +1150,16 @@ export default function InboundFormModal({
                         )}
                       </Space>
                     </Divider>
-                    <Form.Item
-                      name={[field.name, 'privateKey']}
-                      label={
-                        <>
-                          Secret key{' '}
-                          <SyncOutlined
-                            className="random-icon"
-                            onClick={() => regenWgPeerKeypair(field.name)}
-                          />
-                        </>
-                      }
-                    >
-                      <Input />
+                    <Form.Item label="Secret key">
+                      <Space.Compact block>
+                        <Form.Item name={[field.name, 'privateKey']} noStyle>
+                          <Input style={{ width: 'calc(100% - 32px)' }} />
+                        </Form.Item>
+                        <Button
+                          icon={<ReloadOutlined />}
+                          onClick={() => regenWgPeerKeypair(field.name)}
+                        />
+                      </Space.Compact>
                     </Form.Item>
                     <Form.Item name={[field.name, 'publicKey']} label="Public key">
                       <Input />
@@ -1362,25 +1403,22 @@ export default function InboundFormModal({
             />
           </Form.Item>
           {isSSWith2022 && (
-            <Form.Item
-              name={['settings', 'password']}
-              label={
-                <>
-                  Password{' '}
-                  <SyncOutlined
-                    className="random-icon"
-                    onClick={() => {
-                      const method = form.getFieldValue(['settings', 'method']);
-                      form.setFieldValue(
-                        ['settings', 'password'],
-                        RandomUtil.randomShadowsocksPassword(method as string),
-                      );
-                    }}
-                  />
-                </>
-              }
-            >
-              <Input />
+            <Form.Item label="Password">
+              <Space.Compact block>
+                <Form.Item name={['settings', 'password']} noStyle>
+                  <Input style={{ width: 'calc(100% - 32px)' }} />
+                </Form.Item>
+                <Button
+                  icon={<ReloadOutlined />}
+                  onClick={() => {
+                    const method = form.getFieldValue(['settings', 'method']);
+                    form.setFieldValue(
+                      ['settings', 'password'],
+                      RandomUtil.randomShadowsocksPassword(method as string),
+                    );
+                  }}
+                />
+              </Space.Compact>
             </Form.Item>
           )}
           <Form.Item name={['settings', 'network']} label="Network">
@@ -1425,6 +1463,21 @@ export default function InboundFormModal({
               {t('pages.inbounds.vlessAuthSelected', { auth: selectedVlessAuth })}
             </Text>
           </Form.Item>
+          {network === 'tcp' && (security === 'tls' || security === 'reality') && (
+            <Form.Item
+              label="Vision testseed"
+              name={['settings', 'testseed']}
+              initialValue={[900, 500, 900, 256]}
+              normalize={(v: unknown) =>
+                Array.isArray(v)
+                  ? v.map((x) => Number(x)).filter((n) => Number.isInteger(n) && n > 0)
+                  : []
+              }
+              extra="Applies only to clients using the xtls-rprx-vision flow; ignored otherwise."
+            >
+              <Select mode="tags" tokenSeparators={[',', ' ']} placeholder="four positive integers" />
+            </Form.Item>
+          )}
         </>
       )}
 
@@ -1463,6 +1516,24 @@ export default function InboundFormModal({
       if (k !== `${next}Settings`) delete cleaned[k];
     }
     cleaned[`${next}Settings`] = newStreamSlice(next);
+    // mKCP wants a UDP mask wrapper on the FinalMask side; seed it with
+    // `mkcp-original` so the inbound boots with a sensible default
+    // instead of unobfuscated mKCP traffic. The user can still edit or
+    // clear the mask via the FinalMask section.
+    if (next === 'kcp') {
+      const fm = (cleaned.finalmask as Record<string, unknown> | undefined) ?? {};
+      const udp = Array.isArray(fm.udp) ? (fm.udp as unknown[]) : [];
+      const hasMkcp = udp.some((m) => {
+        const entry = m as { type?: string };
+        return entry?.type === 'mkcp-original';
+      });
+      if (!hasMkcp) {
+        cleaned.finalmask = {
+          ...fm,
+          udp: [...udp, { type: 'mkcp-original', settings: {} }],
+        };
+      }
+    }
     form.setFieldValue('streamSettings', cleaned);
   };
 
@@ -2452,9 +2523,9 @@ export default function InboundFormModal({
                 disabled={!tlsOk}
                 onChange={(e) => onSecurityChange(e.target.value)}
               >
-                {!tlsOnly && <Radio.Button value="none">none</Radio.Button>}
-                <Radio.Button value="tls">tls</Radio.Button>
-                {realityOk && <Radio.Button value="reality">reality</Radio.Button>}
+                {!tlsOnly && <Radio.Button value="none">None</Radio.Button>}
+                <Radio.Button value="tls">TLS</Radio.Button>
+                {realityOk && <Radio.Button value="reality">Reality</Radio.Button>}
               </Radio.Group>
             );
           }}
@@ -2613,6 +2684,20 @@ export default function InboundFormModal({
                                 >
                                   <Input />
                                 </Form.Item>
+                                <Form.Item label=" ">
+                                  <Space>
+                                    <Button
+                                      type="primary"
+                                      loading={saving}
+                                      onClick={() => setCertFromPanel(certField.name)}
+                                    >
+                                      {t('pages.inbounds.setDefaultCert')}
+                                    </Button>
+                                    <Button danger onClick={() => clearCertFiles(certField.name)}>
+                                      Clear
+                                    </Button>
+                                  </Space>
+                                </Form.Item>
                               </>
                             ) : (
                               <>
@@ -2741,27 +2826,24 @@ export default function InboundFormModal({
                   options={Object.values(UTLS_FINGERPRINT).map((fp) => ({ value: fp, label: fp }))}
                 />
               </Form.Item>
-              <Form.Item
-                name={['streamSettings', 'realitySettings', 'target']}
-                label={
-                  <>
-                    Target{' '}
-                    <SyncOutlined className="random-icon" onClick={randomizeRealityTarget} />
-                  </>
-                }
-              >
-                <Input />
+              <Form.Item label="Target">
+                <Space.Compact block>
+                  <Form.Item name={['streamSettings', 'realitySettings', 'target']} noStyle>
+                    <Input style={{ width: 'calc(100% - 32px)' }} />
+                  </Form.Item>
+                  <Button icon={<ReloadOutlined />} onClick={randomizeRealityTarget} />
+                </Space.Compact>
               </Form.Item>
-              <Form.Item
-                name={['streamSettings', 'realitySettings', 'serverNames']}
-                label={
-                  <>
-                    SNI{' '}
-                    <SyncOutlined className="random-icon" onClick={randomizeRealityTarget} />
-                  </>
-                }
-              >
-                <Select mode="tags" tokenSeparators={[',']} style={{ width: '100%' }} />
+              <Form.Item label="SNI">
+                <Space.Compact block style={{ display: 'flex' }}>
+                  <Form.Item
+                    name={['streamSettings', 'realitySettings', 'serverNames']}
+                    noStyle
+                  >
+                    <Select mode="tags" tokenSeparators={[',']} style={{ flex: 1 }} />
+                  </Form.Item>
+                  <Button icon={<ReloadOutlined />} onClick={randomizeRealityTarget} />
+                </Space.Compact>
               </Form.Item>
               <Form.Item
                 name={['streamSettings', 'realitySettings', 'maxTimediff']}
@@ -2781,16 +2863,16 @@ export default function InboundFormModal({
               >
                 <Input placeholder="25.9.11" />
               </Form.Item>
-              <Form.Item
-                name={['streamSettings', 'realitySettings', 'shortIds']}
-                label={
-                  <>
-                    Short IDs{' '}
-                    <SyncOutlined className="random-icon" onClick={randomizeShortIds} />
-                  </>
-                }
-              >
-                <Select mode="tags" tokenSeparators={[',']} style={{ width: '100%' }} />
+              <Form.Item label="Short IDs">
+                <Space.Compact block style={{ display: 'flex' }}>
+                  <Form.Item
+                    name={['streamSettings', 'realitySettings', 'shortIds']}
+                    noStyle
+                  >
+                    <Select mode="tags" tokenSeparators={[',']} style={{ flex: 1 }} />
+                  </Form.Item>
+                  <Button icon={<ReloadOutlined />} onClick={randomizeShortIds} />
+                </Space.Compact>
               </Form.Item>
               <Form.Item
                 name={['streamSettings', 'realitySettings', 'settings', 'spiderX']}

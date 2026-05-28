@@ -223,20 +223,16 @@ func sameNode(a, b *int) bool {
 	return *a == *b
 }
 
-// baseInboundTag is the historical "inbound-<port>" / "inbound-<listen>:<port>"
-// shape. kept exactly so existing routing rules that reference these tags
-// keep working after the upgrade.
+// baseInboundTag is the "in-<port>" / "in-<listen>:<port>" core used
+// by composeInboundTag and as a probe shape in setRemoteTrafficLocked
+// for node-side xray imports that pre-date the canonical naming.
 func baseInboundTag(listen string, port int) string {
 	if isAnyListen(listen) {
-		return fmt.Sprintf("inbound-%v", port)
+		return fmt.Sprintf("in-%v", port)
 	}
-	return fmt.Sprintf("inbound-%v:%v", listen, port)
+	return fmt.Sprintf("in-%v:%v", listen, port)
 }
 
-// transportTagSuffix turns a transport mask into a short, stable string.
-// used both for generateInboundTag's disambiguation ("inbound-443-udp"
-// when the base "inbound-443" is taken on a coexisting transport) and
-// for the L4 hint in portConflictDetail's user-facing error message.
 func transportTagSuffix(b transportBits) string {
 	switch b {
 	case transportTCP:
@@ -244,34 +240,69 @@ func transportTagSuffix(b transportBits) string {
 	case transportUDP:
 		return "udp"
 	case transportTCP | transportUDP:
-		return "mixed"
+		return "tcpudp"
 	}
 	return "any"
 }
 
-// generateInboundTag picks a tag for the inbound that doesn't collide with
-// any existing row. for the common single-inbound-per-port case the tag
-// stays exactly as before ("inbound-443"), so user routing rules don't
-// silently change shape on upgrade. only when a same-port neighbour
-// already owns the base tag (now possible because tcp/443 and udp/443 can
-// coexist after the transport-aware port check) does this append a
-// transport suffix like "inbound-443-udp".
-//
-// ignoreId is the inbound's own id during update so it doesn't see itself
-// as a collision; pass 0 on add.
-func (s *InboundService) generateInboundTag(inbound *model.Inbound, ignoreId int) (string, error) {
-	base := baseInboundTag(inbound.Listen, inbound.Port)
-	exists, err := s.tagExists(base, ignoreId)
-	if err != nil {
-		return "", err
+// nodeTagPrefix scopes a tag to one remote node so the same listen+port
+// can live on the central panel and on a node without bumping the global
+// UNIQUE(inbounds.tag) constraint. nil → "" (local panel).
+func nodeTagPrefix(nodeID *int) string {
+	if nodeID == nil {
+		return ""
 	}
-	if !exists {
-		return base, nil
-	}
+	return fmt.Sprintf("n%d-", *nodeID)
+}
 
-	suffix := transportTagSuffix(inboundTransports(inbound.Protocol, inbound.StreamSettings, inbound.Settings))
-	candidate := base + "-" + suffix
-	exists, err = s.tagExists(candidate, ignoreId)
+// protocolShortName collapses the full protocol identifier into a 2–4
+// char tag-friendly token (shadowsocks → ss, wireguard → wg, …). Falls
+// back to the raw identifier for anything not in the table so future
+// protocols don't need a code change just to get a tag.
+func protocolShortName(p model.Protocol) string {
+	switch p {
+	case model.VMESS:
+		return "vm"
+	case model.VLESS:
+		return "vl"
+	case model.Trojan:
+		return "tr"
+	case model.Shadowsocks:
+		return "ss"
+	case model.Mixed:
+		return "mx"
+	case model.WireGuard:
+		return "wg"
+	case model.Hysteria:
+		return "hy"
+	case model.Tunnel:
+		return "tn"
+	case model.HTTP:
+		return "http"
+	}
+	if p == "" {
+		return "any"
+	}
+	return string(p)
+}
+
+// composeInboundTag returns the canonical
+// "[n<id>-]inbound-[<listen>:]<port>-<protocol>-<network>" shape used
+// for every newly created inbound. The protocol + network segments
+// disambiguate tcp/443 and udp/443 sharing a listener; the node prefix
+// lets the same port live on local + node.
+func composeInboundTag(listen string, port int, protocol model.Protocol, nodeID *int, bits transportBits) string {
+	return nodeTagPrefix(nodeID) + baseInboundTag(listen, port) + "-" + protocolShortName(protocol) + "-" + transportTagSuffix(bits)
+}
+
+// generateInboundTag returns a free tag in the canonical shape. ignoreId
+// is the inbound's own id on update so it doesn't see itself as taken;
+// pass 0 on add. Numeric suffix fallback is defensive — the port check
+// should have already blocked an exact-collision insert.
+func (s *InboundService) generateInboundTag(inbound *model.Inbound, ignoreId int) (string, error) {
+	bits := inboundTransports(inbound.Protocol, inbound.StreamSettings, inbound.Settings)
+	candidate := composeInboundTag(inbound.Listen, inbound.Port, inbound.Protocol, inbound.NodeID, bits)
+	exists, err := s.tagExists(candidate, ignoreId)
 	if err != nil {
 		return "", err
 	}
@@ -279,9 +310,6 @@ func (s *InboundService) generateInboundTag(inbound *model.Inbound, ignoreId int
 		return candidate, nil
 	}
 
-	// the transport-aware port check should have already blocked this
-	// path, but guard anyway so a unique-constraint failure doesn't reach
-	// the user as an opaque sqlite error.
 	for i := 2; i < 100; i++ {
 		c := fmt.Sprintf("%s-%d", candidate, i)
 		exists, err = s.tagExists(c, ignoreId)

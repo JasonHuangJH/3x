@@ -1,6 +1,7 @@
 import { useEffect, useMemo, useState } from 'react';
 import { useTranslation } from 'react-i18next';
 import {
+  AutoComplete,
   Button,
   Col,
   Form,
@@ -14,6 +15,7 @@ import {
   Tag,
   message,
 } from 'antd';
+import { ReloadOutlined } from '@ant-design/icons';
 import dayjs from 'dayjs';
 import type { Dayjs } from 'dayjs';
 
@@ -24,6 +26,7 @@ import type { ClientRecord, InboundOption } from '@/hooks/useClients';
 import { ClientFormSchema, ClientCreateFormSchema } from '@/schemas/client';
 
 const FLOW_OPTIONS = Object.values(TLS_FLOW_CONTROL);
+const VMESS_SECURITY_OPTIONS = ['auto', 'aes-128-gcm', 'chacha20-poly1305', 'none', 'zero'] as const;
 
 const MULTI_CLIENT_PROTOCOLS = new Set([
   'shadowsocks', 'vless', 'vmess', 'trojan', 'hysteria',
@@ -60,6 +63,7 @@ interface ClientFormModalProps {
   attachedIds?: number[];
   ipLimitEnable?: boolean;
   tgBotEnable?: boolean;
+  groups?: string[];
   save: (
     payload: Record<string, unknown> | SaveCreatePayload,
     meta: SaveMetaEdit | SaveMetaCreate,
@@ -74,6 +78,7 @@ interface FormState {
   password: string;
   auth: string;
   flow: string;
+  security: string;
   reverseTag: string;
   totalGB: number;
   expiryDate: Dayjs | null;
@@ -82,6 +87,7 @@ interface FormState {
   reset: number;
   limitIp: number;
   tgId: number;
+  group: string;
   comment: string;
   enable: boolean;
   inboundIds: number[];
@@ -95,6 +101,7 @@ function emptyForm(): FormState {
     password: '',
     auth: '',
     flow: '',
+    security: 'auto',
     reverseTag: '',
     totalGB: 0,
     expiryDate: null,
@@ -103,6 +110,7 @@ function emptyForm(): FormState {
     reset: 0,
     limitIp: 0,
     tgId: 0,
+    group: '',
     comment: '',
     enable: true,
     inboundIds: [],
@@ -127,6 +135,7 @@ export default function ClientFormModal({
   attachedIds = [],
   ipLimitEnable = false,
   tgBotEnable = false,
+  groups = [],
   save,
   onOpenChange,
 }: ClientFormModalProps) {
@@ -157,11 +166,13 @@ export default function ClientFormModal({
         password: client.password || '',
         auth: client.auth || '',
         flow: client.flow || '',
+        security: client.security || 'auto',
         reverseTag: client.reverse?.tag || '',
         totalGB: bytesToGB(client.totalGB || 0),
         reset: Number(client.reset) || 0,
         limitIp: client.limitIp || 0,
         tgId: Number(client.tgId) || 0,
+        group: client.group || '',
         comment: client.comment || '',
         enable: !!client.enable,
         inboundIds: Array.isArray(attachedIds) ? [...attachedIds] : [],
@@ -207,6 +218,14 @@ export default function ClientFormModal({
     return ids;
   }, [inbounds]);
 
+  const vmessIds = useMemo(() => {
+    const ids = new Set<number>();
+    for (const row of inbounds || []) {
+      if (row && row.protocol === 'vmess') ids.add(row.id);
+    }
+    return ids;
+  }, [inbounds]);
+
   const showFlow = useMemo(
     () => (form.inboundIds || []).some((id) => flowCapableIds.has(id)),
     [form.inboundIds, flowCapableIds],
@@ -215,6 +234,11 @@ export default function ClientFormModal({
   const showReverseTag = useMemo(
     () => (form.inboundIds || []).some((id) => vlessLikeIds.has(id)),
     [form.inboundIds, vlessLikeIds],
+  );
+
+  const showSecurity = useMemo(
+    () => (form.inboundIds || []).some((id) => vmessIds.has(id)),
+    [form.inboundIds, vmessIds],
   );
 
   useEffect(() => {
@@ -279,6 +303,7 @@ export default function ClientFormModal({
       password: form.password,
       auth: form.auth,
       flow: form.flow,
+      security: form.security,
       reverseTag: form.reverseTag,
       totalGB: form.totalGB,
       delayedStart: form.delayedStart,
@@ -286,6 +311,7 @@ export default function ClientFormModal({
       reset: form.reset,
       limitIp: form.limitIp,
       tgId: form.tgId,
+      group: form.group,
       comment: form.comment,
       enable: form.enable,
       inboundIds: form.inboundIds,
@@ -305,6 +331,7 @@ export default function ClientFormModal({
       password: form.password,
       auth: form.auth,
       flow: showFlow ? (form.flow || '') : '',
+      security: showSecurity ? (form.security || 'auto') : 'auto',
       totalGB: gbToBytes(form.totalGB),
       expiryTime,
       reset: Number(form.reset) || 0,
@@ -369,7 +396,7 @@ export default function ClientFormModal({
                     style={{ flex: 1 }}
                     onChange={(e) => update('email', e.target.value)}
                   />
-                  <Button onClick={() => update('email', RandomUtil.randomLowerAndNum(12))}>↻</Button>
+                  <Button icon={<ReloadOutlined />} onClick={() => update('email', RandomUtil.randomLowerAndNum(12))} />
                 </Space.Compact>
               </Form.Item>
             </Col>
@@ -377,7 +404,7 @@ export default function ClientFormModal({
               <Form.Item label={t('pages.clients.subId')}>
                 <Space.Compact style={{ display: 'flex' }}>
                   <Input value={form.subId} style={{ flex: 1 }} onChange={(e) => update('subId', e.target.value)} />
-                  <Button onClick={() => update('subId', RandomUtil.randomLowerAndNum(16))}>↻</Button>
+                  <Button icon={<ReloadOutlined />} onClick={() => update('subId', RandomUtil.randomLowerAndNum(16))} />
                 </Space.Compact>
               </Form.Item>
             </Col>
@@ -388,7 +415,7 @@ export default function ClientFormModal({
               <Form.Item label={t('pages.clients.hysteriaAuth')}>
                 <Space.Compact style={{ display: 'flex' }}>
                   <Input value={form.auth} style={{ flex: 1 }} onChange={(e) => update('auth', e.target.value)} />
-                  <Button onClick={() => update('auth', RandomUtil.randomLowerAndNum(16))}>↻</Button>
+                  <Button icon={<ReloadOutlined />} onClick={() => update('auth', RandomUtil.randomLowerAndNum(16))} />
                 </Space.Compact>
               </Form.Item>
             </Col>
@@ -396,7 +423,7 @@ export default function ClientFormModal({
               <Form.Item label={t('pages.clients.password')}>
                 <Space.Compact style={{ display: 'flex' }}>
                   <Input value={form.password} style={{ flex: 1 }} onChange={(e) => update('password', e.target.value)} />
-                  <Button onClick={() => update('password', RandomUtil.randomLowerAndNum(16))}>↻</Button>
+                  <Button icon={<ReloadOutlined />} onClick={() => update('password', RandomUtil.randomLowerAndNum(16))} />
                 </Space.Compact>
               </Form.Item>
             </Col>
@@ -407,7 +434,7 @@ export default function ClientFormModal({
               <Form.Item label={t('pages.clients.uuid')}>
                 <Space.Compact style={{ display: 'flex' }}>
                   <Input value={form.uuid} style={{ flex: 1 }} onChange={(e) => update('uuid', e.target.value)} />
-                  <Button onClick={() => update('uuid', RandomUtil.randomUUID())}>↻</Button>
+                  <Button icon={<ReloadOutlined />} onClick={() => update('uuid', RandomUtil.randomUUID())} />
                 </Space.Compact>
               </Form.Item>
             </Col>
@@ -489,6 +516,17 @@ export default function ClientFormModal({
                 </Form.Item>
               </Col>
             )}
+            {showSecurity && (
+              <Col xs={24} md={12}>
+                <Form.Item label={t('pages.clients.vmessSecurity')}>
+                  <Select
+                    value={form.security}
+                    onChange={(v) => update('security', v)}
+                    options={VMESS_SECURITY_OPTIONS.map((k) => ({ value: k, label: k }))}
+                  />
+                </Form.Item>
+              </Col>
+            )}
           </Row>
 
           <Row gutter={16}>
@@ -504,6 +542,21 @@ export default function ClientFormModal({
             <Col xs={24} md={tgBotEnable ? 12 : 24}>
               <Form.Item label={t('pages.clients.comment')}>
                 <Input value={form.comment} onChange={(e) => update('comment', e.target.value)} />
+              </Form.Item>
+            </Col>
+            <Col xs={24} md={12}>
+              <Form.Item label={t('pages.clients.group')} tooltip={t('pages.clients.groupDesc')}>
+                <AutoComplete
+                  value={form.group}
+                  placeholder={t('pages.clients.groupPlaceholder')}
+                  options={groups.map((g) => ({ value: g }))}
+                  onChange={(v) => update('group', v ?? '')}
+                  filterOption={(input, option) =>
+                    String(option?.value ?? '').toLowerCase().includes((input || '').toLowerCase())
+                  }
+                  allowClear
+                  style={{ width: '100%' }}
+                />
               </Form.Item>
             </Col>
           </Row>
