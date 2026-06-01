@@ -160,7 +160,6 @@ export default function InboundFormModal({
   const security = Form.useWatch(['streamSettings', 'security'], form) ?? 'none';
   const streamEnabled = canEnableStream({ protocol });
 
-  const wListen = Form.useWatch('listen', form) ?? '';
   const wPort = Form.useWatch('port', form);
   const wNodeId = Form.useWatch('nodeId', form) ?? null;
   const wTag = Form.useWatch('tag', form) ?? '';
@@ -169,7 +168,6 @@ export default function InboundFormModal({
   const autoTagRef = useRef(true);
   const lastWrittenTagRef = useRef('');
   const currentTagInput = (): InboundTagInput => ({
-    listen: typeof wListen === 'string' ? wListen : '',
     port: typeof wPort === 'number' ? wPort : 0,
     nodeId: typeof wNodeId === 'number' ? wNodeId : null,
     protocol,
@@ -293,7 +291,6 @@ export default function InboundFormModal({
     form.setFieldsValue(initial);
     const initialTag = (initial.tag ?? '') as string;
     autoTagRef.current = isAutoInboundTag(initialTag, {
-      listen: initial.listen ?? '',
       port: initial.port ?? 0,
       nodeId: initial.nodeId ?? null,
       protocol: initial.protocol,
@@ -329,7 +326,7 @@ export default function InboundFormModal({
       form.setFieldValue('tag', next);
     }
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [open, wListen, wPort, wNodeId, protocol, network, mixedUdpOn, wSsNetwork, wTunnelNetwork]);
+  }, [open, wPort, wNodeId, protocol, network, mixedUdpOn, wSsNetwork, wTunnelNetwork]);
 
   // Why: protocol picker reset cascades through the form — clearing the
   // settings DU branch and dropping a nodeId that no longer applies. The
@@ -625,7 +622,7 @@ export default function InboundFormModal({
     }
     cleaned[`${next}Settings`] = newStreamSlice(next);
     // mKCP wants a UDP mask wrapper on the FinalMask side; seed it with
-    // `mkcp-original` so the inbound boots with a sensible default
+    // `mkcp-legacy` so the inbound boots with a sensible default
     // instead of unobfuscated mKCP traffic. The user can still edit or
     // clear the mask via the FinalMask section.
     if (next === 'kcp') {
@@ -633,12 +630,12 @@ export default function InboundFormModal({
       const udp = Array.isArray(fm.udp) ? (fm.udp as unknown[]) : [];
       const hasMkcp = udp.some((m) => {
         const entry = m as { type?: string };
-        return entry?.type === 'mkcp-original';
+        return entry?.type === 'mkcp-legacy';
       });
       if (!hasMkcp) {
         cleaned.finalmask = {
           ...fm,
-          udp: [...udp, { type: 'mkcp-original', settings: {} }],
+          udp: [...udp, { type: 'mkcp-legacy', settings: { header: '', value: '' } }],
         };
       }
     }
