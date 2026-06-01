@@ -246,7 +246,10 @@
       "importDatabaseError": "データベースのインポート中にエラーが発生しました",
       "readDatabaseError": "データベースの読み取り中にエラーが発生しました",
       "getDatabaseError": "データベースの取得中にエラーが発生しました",
-      "getConfigError": "設定ファイルの取得中にエラーが発生しました"
+      "getConfigError": "設定ファイルの取得中にエラーが発生しました",
+      "backupPostgresNote": "このパネルは PostgreSQL で動作しています。「バックアップ」は pg_dump アーカイブ (.dump) をダウンロードし、「復元」は pg_restore で読み込み直します。サーバーに PostgreSQL クライアントツール (pg_dump と pg_restore) がインストールされている必要があります。",
+      "exportDatabasePgDesc": "現在のデータベースの PostgreSQL ダンプ (.dump) を端末にダウンロードするにはクリックしてください。",
+      "importDatabasePgDesc": "PostgreSQL データベースを復元するために .dump ファイルを選択してアップロードするにはクリックしてください。現在のすべてのデータが置き換えられます。"
     },
     "inbounds": {
       "title": "インバウンド",
@@ -296,6 +299,10 @@
       "deleteConfirmContent": "インバウンドと関連付けされたすべてのクライアントを削除します。元に戻せません。",
       "resetConfirmTitle": "「{remark}」のトラフィックをリセットしますか？",
       "resetConfirmContent": "このインバウンドの送受信カウンタを 0 にリセットします。",
+      "selectedCount": "{count} 選択中",
+      "selectAll": "すべて選択",
+      "bulkDeleteConfirmTitle": "{count} 件のインバウンドを削除しますか？",
+      "bulkDeleteConfirmContent": "選択したインバウンドと関連付けされたすべてのクライアントを削除します。元に戻せません。",
       "cloneConfirmTitle": "インバウンド「{remark}」を複製しますか？",
       "cloneConfirmContent": "新しいポートと空のクライアント一覧でコピーを作成します。",
       "delAllClients": "すべてのクライアントを削除",
@@ -421,6 +428,8 @@
         "inboundsUpdateSuccess": "インバウンドが正常に更新されました",
         "inboundUpdateSuccess": "インバウンドが正常に更新されました",
         "inboundCreateSuccess": "インバウンドが正常に作成されました",
+        "bulkDeleted": "{count} 件のインバウンドを削除しました",
+        "bulkDeletedMixed": "{ok} 件削除、{failed} 件失敗",
         "inboundDeleteSuccess": "インバウンドが正常に削除されました",
         "inboundClientAddSuccess": "インバウンドクライアントが追加されました",
         "inboundClientDeleteSuccess": "インバウンドクライアントが削除されました",
@@ -433,7 +442,10 @@
         "trafficGetError": "トラフィックの取得中にエラーが発生しました",
         "getNewX25519CertError": "X25519証明書の取得中にエラーが発生しました。",
         "getNewmldsa65Error": "mldsa65証明書の取得中にエラーが発生しました。",
-        "getNewVlessEncError": "VlessEnc証明書の取得中にエラーが発生しました。"
+        "getNewVlessEncError": "VlessEnc証明書の取得中にエラーが発生しました。",
+        "invalidClientField": "クライアント {client}: フィールド {field} — {reason}",
+        "invalidField": "{field} — {reason}",
+        "moreIssues": "{message}  (他 {count} 件)"
       },
       "form": {
         "moveUp": "上へ",
@@ -646,6 +658,8 @@
       "subId": "サブスクリプション ID",
       "online": "オンライン",
       "email": "メール",
+      "emailInvalidChars": "メールアドレスにスペース、'/'、'\\'、または制御文字を含めることはできません",
+      "subIdInvalidChars": "サブスクリプションIDにスペース、'/'、'\\'、または制御文字を含めることはできません",
       "group": "グループ",
       "groupDesc": "関連クライアントをまとめる論理ラベル(チーム、顧客、地域など)。ツールバーからフィルタ可能。",
       "groupPlaceholder": "例: customer-a",

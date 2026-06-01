@@ -246,7 +246,10 @@
       "importDatabaseError": "An error occurred while importing the database.",
       "readDatabaseError": "An error occurred while reading the database.",
       "getDatabaseError": "An error occurred while retrieving the database.",
-      "getConfigError": "An error occurred while retrieving the config file."
+      "getConfigError": "An error occurred while retrieving the config file.",
+      "backupPostgresNote": "This panel runs on PostgreSQL. Back Up downloads a pg_dump archive (.dump) and Restore loads it back with pg_restore. The server needs the PostgreSQL client tools (pg_dump and pg_restore) installed.",
+      "exportDatabasePgDesc": "Click to download a PostgreSQL dump (.dump) of your current database to your device.",
+      "importDatabasePgDesc": "Click to select and upload a .dump file to restore your PostgreSQL database. This replaces all current data."
     },
     "inbounds": {
       "title": "Inbounds",
@@ -296,6 +299,10 @@
       "deleteConfirmContent": "This removes the inbound and all its clients. This cannot be undone.",
       "resetConfirmTitle": "Reset traffic for \"{remark}\"?",
       "resetConfirmContent": "Resets up/down counters to 0 for this inbound.",
+      "selectedCount": "{count} selected",
+      "selectAll": "Select all",
+      "bulkDeleteConfirmTitle": "Delete {count} inbounds?",
+      "bulkDeleteConfirmContent": "This removes the selected inbounds and all their clients. This cannot be undone.",
       "cloneConfirmTitle": "Clone inbound \"{remark}\"?",
       "cloneConfirmContent": "Creates a copy with a new port and an empty client list.",
       "delAllClients": "Delete All Clients",
@@ -421,6 +428,8 @@
         "inboundsUpdateSuccess": "Inbounds have been successfully updated.",
         "inboundUpdateSuccess": "Inbound has been successfully updated.",
         "inboundCreateSuccess": "Inbound has been successfully created.",
+        "bulkDeleted": "{count} inbounds deleted",
+        "bulkDeletedMixed": "{ok} deleted, {failed} failed",
         "inboundDeleteSuccess": "Inbound has been successfully deleted.",
         "inboundClientAddSuccess": "Inbound client(s) have been added.",
         "inboundClientDeleteSuccess": "Inbound client has been deleted.",
@@ -433,7 +442,10 @@
         "trafficGetError": "Error getting traffic.",
         "getNewX25519CertError": "Error while obtaining the X25519 certificate.",
         "getNewmldsa65Error": "Error while obtaining mldsa65.",
-        "getNewVlessEncError": "Error while obtaining VlessEnc."
+        "getNewVlessEncError": "Error while obtaining VlessEnc.",
+        "invalidClientField": "Client {client}: {field} — {reason}",
+        "invalidField": "{field} — {reason}",
+        "moreIssues": "{message}  (+{count} more)"
       },
       "form": {
         "moveUp": "Move up",
@@ -646,6 +658,8 @@
       "subId": "Subscription ID",
       "online": "Online",
       "email": "Email",
+      "emailInvalidChars": "Email cannot contain spaces, '/', '\\', or control characters",
+      "subIdInvalidChars": "Subscription ID cannot contain spaces, '/', '\\', or control characters",
       "group": "Group",
       "groupDesc": "Logical label used to bucket related clients (e.g. team, customer, region). Filterable from the toolbar.",
       "groupPlaceholder": "e.g. customer-a",

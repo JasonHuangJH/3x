@@ -246,7 +246,10 @@
       "importDatabaseError": "حدث خطأ أثناء استيراد قاعدة البيانات",
       "readDatabaseError": "حدث خطأ أثناء قراءة قاعدة البيانات",
       "getDatabaseError": "حدث خطأ أثناء استرجاع قاعدة البيانات",
-      "getConfigError": "حدث خطأ أثناء استرجاع ملف الإعدادات"
+      "getConfigError": "حدث خطأ أثناء استرجاع ملف الإعدادات",
+      "backupPostgresNote": "تعمل هذه اللوحة على PostgreSQL. يقوم «النسخ الاحتياطي» بتنزيل أرشيف pg_dump (.dump)، و«الاستعادة» تعيد تحميله عبر pg_restore. يجب أن تكون أدوات عميل PostgreSQL (pg_dump و pg_restore) مثبَّتة على الخادم.",
+      "exportDatabasePgDesc": "انقر لتنزيل نسخة PostgreSQL (.dump) من قاعدة بياناتك الحالية إلى جهازك.",
+      "importDatabasePgDesc": "انقر لاختيار ورفع ملف .dump لاستعادة قاعدة بيانات PostgreSQL. سيؤدي هذا إلى استبدال جميع البيانات الحالية."
     },
     "inbounds": {
       "title": "الواردات",
@@ -296,6 +299,10 @@
       "deleteConfirmContent": "سيؤدي هذا إلى إزالة الإدخال وجميع عملائه. لا يمكن التراجع.",
       "resetConfirmTitle": "إعادة تعيين ترافيك \"{remark}\"؟",
       "resetConfirmContent": "يعيد عدادات الإرسال/الاستقبال لهذا الإدخال إلى 0.",
+      "selectedCount": "{count} محدد",
+      "selectAll": "تحديد الكل",
+      "bulkDeleteConfirmTitle": "حذف {count} إدخال؟",
+      "bulkDeleteConfirmContent": "سيؤدي هذا إلى إزالة الإدخالات المحددة وجميع عملائها. لا يمكن التراجع.",
       "cloneConfirmTitle": "نسخ الإدخال \"{remark}\"؟",
       "cloneConfirmContent": "ينشئ نسخة بمنفذ جديد وقائمة عملاء فارغة.",
       "delAllClients": "حذف جميع العملاء",
@@ -421,6 +428,8 @@
         "inboundsUpdateSuccess": "تم تحديث الواردات بنجاح",
         "inboundUpdateSuccess": "تم تحديث الوارد بنجاح",
         "inboundCreateSuccess": "تم إنشاء الوارد بنجاح",
+        "bulkDeleted": "تم حذف {count} إدخال",
+        "bulkDeletedMixed": "تم حذف {ok}, وفشل {failed}",
         "inboundDeleteSuccess": "تم حذف الوارد بنجاح",
         "inboundClientAddSuccess": "تمت إضافة عميل(عملاء) وارد",
         "inboundClientDeleteSuccess": "تم حذف عميل وارد",
@@ -433,7 +442,10 @@
         "trafficGetError": "خطأ في الحصول على حركات المرور",
         "getNewX25519CertError": "حدث خطأ أثناء الحصول على شهادة X25519.",
         "getNewmldsa65Error": "حدث خطاء في الحصول على mldsa65.",
-        "getNewVlessEncError": "حدث خطأ أثناء الحصول على VlessEnc."
+        "getNewVlessEncError": "حدث خطأ أثناء الحصول على VlessEnc.",
+        "invalidClientField": "العميل {client}: الحقل {field} — {reason}",
+        "invalidField": "{field} — {reason}",
+        "moreIssues": "{message}  (+{count} أخرى)"
       },
       "form": {
         "moveUp": "أعلى",
@@ -646,6 +658,8 @@
       "subId": "معرّف الاشتراك",
       "online": "متصل",
       "email": "البريد",
+      "emailInvalidChars": "لا يمكن أن يحتوي البريد الإلكتروني على مسافات أو '/' أو '\\' أو أحرف تحكم",
+      "subIdInvalidChars": "لا يمكن أن يحتوي معرّف الاشتراك على مسافات أو '/' أو '\\' أو أحرف تحكم",
       "group": "المجموعة",
       "groupDesc": "تسمية منطقية لتجميع العملاء (مثل فريق، عميل، منطقة). يمكن تصفيتها من شريط الأدوات.",
       "groupPlaceholder": "مثلاً customer-a",

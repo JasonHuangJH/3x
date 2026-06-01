@@ -1,8 +1,8 @@
 import { z } from 'zod';
 
 import { PortSchema } from '@/schemas/primitives';
-import { VmessSecuritySchema } from '@/schemas/protocols/inbound/vmess';
-import { SSMethodSchema } from '@/schemas/protocols/inbound/shadowsocks';
+import { SSMethodSchema } from '@/schemas/protocols/shared/shadowsocks';
+import { VmessSecuritySchema } from '@/schemas/protocols/shared/vmess';
 import { SecuritySettingsSchema } from '@/schemas/protocols/security';
 import { NetworkSettingsSchema, StreamExtrasSchema } from '@/schemas/protocols/stream';
 import {
@@ -166,6 +166,7 @@ export type FreedomFinalRuleForm = z.infer<typeof FreedomFinalRuleFormSchema>;
 export const FreedomOutboundFormSettingsSchema = z.object({
   domainStrategy: z.union([OutboundDomainStrategySchema, z.literal('')]).default(''),
   redirect: z.string().default(''),
+  userLevel: z.number().int().min(0).default(0),
   proxyProtocol: z.number().int().min(0).max(2).default(0),
   fragment: FreedomFragmentSchema.default({
     packets: '1-3',

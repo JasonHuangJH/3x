@@ -20,7 +20,7 @@ import dayjs from 'dayjs';
 import type { Dayjs } from 'dayjs';
 
 import { HttpUtil, RandomUtil } from '@/utils';
-import DateTimePicker from '@/components/DateTimePicker';
+import { DateTimePicker } from '@/components/form';
 import { TLS_FLOW_CONTROL } from '@/schemas/primitives';
 import type { ClientRecord, InboundOption } from '@/hooks/useClients';
 import { ClientFormSchema, ClientCreateFormSchema } from '@/schemas/client';
@@ -344,6 +344,7 @@ export default function ClientFormModal({
       reset: Number(form.reset) || 0,
       limitIp: Number(form.limitIp) || 0,
       tgId: Number(form.tgId) || 0,
+      group: form.group,
       comment: form.comment,
       enable: !!form.enable,
     };

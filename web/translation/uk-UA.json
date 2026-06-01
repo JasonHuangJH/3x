@@ -246,7 +246,10 @@
       "importDatabaseError": "Виникла помилка під час імпорту бази даних",
       "readDatabaseError": "Виникла помилка під час читання бази даних",
       "getDatabaseError": "Виникла помилка під час отримання бази даних",
-      "getConfigError": "Виникла помилка під час отримання файлу конфігурації"
+      "getConfigError": "Виникла помилка під час отримання файлу конфігурації",
+      "backupPostgresNote": "Ця панель працює на PostgreSQL. «Резервна копія» завантажує архів pg_dump (.dump), а «Відновлення» завантажує його назад через pg_restore. На сервері мають бути встановлені клієнтські інструменти PostgreSQL (pg_dump і pg_restore).",
+      "exportDatabasePgDesc": "Натисніть, щоб завантажити дамп PostgreSQL (.dump) вашої поточної бази даних на ваш пристрій.",
+      "importDatabasePgDesc": "Натисніть, щоб вибрати та завантажити файл .dump для відновлення бази даних PostgreSQL. Це замінить усі поточні дані."
     },
     "inbounds": {
       "title": "Вхідні",
@@ -296,6 +299,10 @@
       "deleteConfirmContent": "Це видалить вхідні та всіх його клієнтів. Цю дію неможливо скасувати.",
       "resetConfirmTitle": "Скинути трафік \"{remark}\"?",
       "resetConfirmContent": "Скидає лічильники відправки/отримання цього вхідного до 0.",
+      "selectedCount": "Обрано {count}",
+      "selectAll": "Вибрати все",
+      "bulkDeleteConfirmTitle": "Видалити {count} вхідних підключень?",
+      "bulkDeleteConfirmContent": "Будуть видалені вибрані вхідні підключення та всі їхні клієнти. Цю дію неможливо скасувати.",
       "cloneConfirmTitle": "Клонувати вхідні \"{remark}\"?",
       "cloneConfirmContent": "Створює копію з новим портом і порожнім списком клієнтів.",
       "delAllClients": "Видалити всіх клієнтів",
@@ -421,6 +428,8 @@
         "inboundsUpdateSuccess": "Вхідні підключення успішно оновлено",
         "inboundUpdateSuccess": "Вхідне підключення успішно оновлено",
         "inboundCreateSuccess": "Вхідне підключення успішно створено",
+        "bulkDeleted": "Видалено підключень: {count}",
+        "bulkDeletedMixed": "Видалено: {ok}, не вдалось: {failed}",
         "inboundDeleteSuccess": "Вхідне підключення успішно видалено",
         "inboundClientAddSuccess": "Клієнт(и) вхідного підключення додано",
         "inboundClientDeleteSuccess": "Клієнта вхідного підключення видалено",
@@ -433,7 +442,10 @@
         "trafficGetError": "Помилка отримання даних про трафік",
         "getNewX25519CertError": "Помилка при отриманні сертифіката X25519.",
         "getNewmldsa65Error": "Помилка при отриманні сертифіката mldsa65.",
-        "getNewVlessEncError": "Помилка при отриманні сертифіката VlessEnc."
+        "getNewVlessEncError": "Помилка при отриманні сертифіката VlessEnc.",
+        "invalidClientField": "Клієнт {client}: поле {field} — {reason}",
+        "invalidField": "{field} — {reason}",
+        "moreIssues": "{message}  (+{count} ще)"
       },
       "form": {
         "moveUp": "Вгору",
@@ -646,6 +658,8 @@
       "subId": "ID підписки",
       "online": "У мережі",
       "email": "Email",
+      "emailInvalidChars": "Email не може містити пробіли, '/', '\\' або керуючі символи",
+      "subIdInvalidChars": "ID підписки не може містити пробіли, '/', '\\' або керуючі символи",
       "group": "Група",
       "groupDesc": "Логічна мітка для групування пов'язаних клієнтів (напр. команда, клієнт, регіон). Фільтрується з панелі інструментів.",
       "groupPlaceholder": "напр. customer-a",
@@ -800,7 +814,7 @@
       "address": "Адреса",
       "port": "Порт",
       "basePath": "Базовий шлях",
-      "apiToken": "API Token",
+      "apiToken": "API Токен",
       "apiTokenPlaceholder": "Токен зі сторінки Налаштувань віддаленої панелі",
       "apiTokenHint": "Віддалена панель показує свій токен API в Налаштуваннях → Токен API.",
       "regenerate": "Перегенерувати токен",

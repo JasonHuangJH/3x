@@ -246,7 +246,10 @@
       "importDatabaseError": "خطا در وارد کردن پایگاه داده",
       "readDatabaseError": "خطا در خواندن پایگاه داده",
       "getDatabaseError": "خطا در دریافت پایگاه داده",
-      "getConfigError": "خطا در دریافت فایل پیکربندی"
+      "getConfigError": "خطا در دریافت فایل پیکربندی",
+      "backupPostgresNote": "این پنل روی PostgreSQL اجرا می‌شود. «پشتیبان‌گیری» یک آرشیو pg_dump (.dump) دانلود می‌کند و «بازیابی» آن را با pg_restore بازمی‌گرداند. سرور باید ابزارهای کلاینت PostgreSQL (pg_dump و pg_restore) را نصب داشته باشد.",
+      "exportDatabasePgDesc": "برای دانلود یک دامپ PostgreSQL (.dump) از پایگاه داده فعلی روی دستگاهتان کلیک کنید.",
+      "importDatabasePgDesc": "برای انتخاب و بارگذاری یک فایل .dump جهت بازیابی پایگاه داده PostgreSQL کلیک کنید. این کار همه داده‌های فعلی را جایگزین می‌کند."
     },
     "inbounds": {
       "title": "ورودی‌ها",
@@ -296,6 +299,10 @@
       "deleteConfirmContent": "این اینباند و تمام کلاینت‌های آن حذف می‌شود. این عمل غیرقابل بازگشت است.",
       "resetConfirmTitle": "ترافیک اینباند «{remark}» صفر شود؟",
       "resetConfirmContent": "شمارنده‌های ارسال/دریافت این اینباند به صفر برمی‌گردد.",
+      "selectedCount": "{count} انتخاب‌شده",
+      "selectAll": "انتخاب همه",
+      "bulkDeleteConfirmTitle": "حذف {count} اینباند؟",
+      "bulkDeleteConfirmContent": "اینباندهای انتخاب‌شده و تمام کلاینت‌های آن‌ها حذف می‌شوند. این عمل غیرقابل بازگشت است.",
       "cloneConfirmTitle": "اینباند «{remark}» کپی شود؟",
       "cloneConfirmContent": "یک نسخه با پورت جدید و لیست کلاینت خالی ساخته می‌شود.",
       "delAllClients": "حذف همه کلاینت‌ها",
@@ -421,6 +428,8 @@
         "inboundsUpdateSuccess": "ورودی‌ها با موفقیت به‌روزرسانی شدند",
         "inboundUpdateSuccess": "ورودی با موفقیت به‌روزرسانی شد",
         "inboundCreateSuccess": "ورودی با موفقیت ایجاد شد",
+        "bulkDeleted": "{count} اینباند حذف شد",
+        "bulkDeletedMixed": "{ok} حذف، {failed} ناموفق",
         "inboundDeleteSuccess": "ورودی با موفقیت حذف شد",
         "inboundClientAddSuccess": "کلاینت(های) ورودی اضافه شدند",
         "inboundClientDeleteSuccess": "کلاینت ورودی حذف شد",
@@ -433,7 +442,10 @@
         "trafficGetError": "خطا در دریافت ترافیک‌ها",
         "getNewX25519CertError": "خطا در دریافت گواهی X25519.",
         "getNewmldsa65Error": "خطا در دریافت گواهی mldsa65.",
-        "getNewVlessEncError": "خطا در دریافت گواهی VlessEnc."
+        "getNewVlessEncError": "خطا در دریافت گواهی VlessEnc.",
+        "invalidClientField": "کلاینت {client}: فیلد {field} — {reason}",
+        "invalidField": "{field} — {reason}",
+        "moreIssues": "{message}  (+{count} مورد دیگر)"
       },
       "form": {
         "moveUp": "بالا",
@@ -646,6 +658,8 @@
       "subId": "شناسه اشتراک",
       "online": "آنلاین",
       "email": "ایمیل",
+      "emailInvalidChars": "ایمیل نمی‌تواند شامل فاصله، '/'، '\\' یا کاراکترهای کنترلی باشد",
+      "subIdInvalidChars": "شناسه‌ی اشتراک نمی‌تواند شامل فاصله، '/'، '\\' یا کاراکترهای کنترلی باشد",
       "group": "گروه",
       "groupDesc": "برچسبی منطقی برای دسته‌بندی کاربران مرتبط (مثل تیم، مشتری، منطقه). از نوار ابزار قابل فیلتر است.",
       "groupPlaceholder": "مثلاً customer-a",

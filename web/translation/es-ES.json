@@ -246,7 +246,10 @@
       "importDatabaseError": "Ocurrió un error al importar la base de datos",
       "readDatabaseError": "Ocurrió un error al leer la base de datos",
       "getDatabaseError": "Ocurrió un error al obtener la base de datos",
-      "getConfigError": "Ocurrió un error al obtener el archivo de configuración"
+      "getConfigError": "Ocurrió un error al obtener el archivo de configuración",
+      "backupPostgresNote": "Este panel funciona con PostgreSQL. «Copia de seguridad» descarga un archivo pg_dump (.dump) y «Restaurar» lo vuelve a cargar con pg_restore. El servidor necesita tener instaladas las herramientas cliente de PostgreSQL (pg_dump y pg_restore).",
+      "exportDatabasePgDesc": "Haz clic para descargar un volcado de PostgreSQL (.dump) de tu base de datos actual en tu dispositivo.",
+      "importDatabasePgDesc": "Haz clic para seleccionar y subir un archivo .dump y restaurar tu base de datos PostgreSQL. Esto reemplaza todos los datos actuales."
     },
     "inbounds": {
       "title": "Entradas",
@@ -296,6 +299,10 @@
       "deleteConfirmContent": "Esto elimina el inbound y todos sus clientes. No se puede deshacer.",
       "resetConfirmTitle": "¿Restablecer el tráfico de \"{remark}\"?",
       "resetConfirmContent": "Restablece los contadores de subida/bajada a 0 para este inbound.",
+      "selectedCount": "{count} seleccionado(s)",
+      "selectAll": "Seleccionar todo",
+      "bulkDeleteConfirmTitle": "¿Eliminar {count} inbounds?",
+      "bulkDeleteConfirmContent": "Esto elimina los inbounds seleccionados y todos sus clientes. No se puede deshacer.",
       "cloneConfirmTitle": "¿Clonar el inbound \"{remark}\"?",
       "cloneConfirmContent": "Crea una copia con un puerto nuevo y una lista de clientes vacía.",
       "delAllClients": "Eliminar todos los clientes",
@@ -421,6 +428,8 @@
         "inboundsUpdateSuccess": "Entradas actualizadas correctamente",
         "inboundUpdateSuccess": "Entrada actualizada correctamente",
         "inboundCreateSuccess": "Entrada creada correctamente",
+        "bulkDeleted": "{count} inbounds eliminados",
+        "bulkDeletedMixed": "{ok} eliminados, {failed} fallidos",
         "inboundDeleteSuccess": "Entrada eliminada correctamente",
         "inboundClientAddSuccess": "Cliente(s) de entrada añadido(s)",
         "inboundClientDeleteSuccess": "Cliente de entrada eliminado",
@@ -433,7 +442,10 @@
         "trafficGetError": "Error al obtener los tráficos",
         "getNewX25519CertError": "Error al obtener el certificado X25519.",
         "getNewmldsa65Error": "Error al obtener el certificado mldsa65.",
-        "getNewVlessEncError": "Error al obtener el certificado VlessEnc."
+        "getNewVlessEncError": "Error al obtener el certificado VlessEnc.",
+        "invalidClientField": "Cliente {client}: campo {field} — {reason}",
+        "invalidField": "{field} — {reason}",
+        "moreIssues": "{message}  (+{count} más)"
       },
       "form": {
         "moveUp": "Subir",
@@ -646,6 +658,8 @@
       "subId": "ID de suscripción",
       "online": "En línea",
       "email": "Email",
+      "emailInvalidChars": "El correo no puede contener espacios, '/', '\\' ni caracteres de control",
+      "subIdInvalidChars": "El ID de suscripción no puede contener espacios, '/', '\\' ni caracteres de control",
       "group": "Grupo",
       "groupDesc": "Etiqueta lógica para agrupar clientes relacionados (p. ej. equipo, cliente, región). Filtrable desde la barra de herramientas.",
       "groupPlaceholder": "p. ej. customer-a",

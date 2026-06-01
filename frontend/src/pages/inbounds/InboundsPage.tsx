@@ -28,19 +28,19 @@ import { useTheme } from '@/hooks/useTheme';
 import { useMediaQuery } from '@/hooks/useMediaQuery';
 import { useWebSocket } from '@/hooks/useWebSocket';
 import { useNodesQuery } from '@/api/queries/useNodesQuery';
-import AppSidebar from '@/components/AppSidebar';
-const TextModal = lazy(() => import('@/components/TextModal'));
-const PromptModal = lazy(() => import('@/components/PromptModal'));
+import AppSidebar from '@/layouts/AppSidebar';
+const TextModal = lazy(() => import('@/components/feedback/TextModal'));
+const PromptModal = lazy(() => import('@/components/feedback/PromptModal'));
 
 import { useInbounds } from './useInbounds';
-import InboundList from './InboundList';
-import LazyMount from '@/components/LazyMount';
-const InboundFormModal = lazy(() => import('./InboundFormModal'));
-const InboundInfoModal = lazy(() => import('./InboundInfoModal'));
-const QrCodeModal = lazy(() => import('./QrCodeModal'));
-const AttachClientsModal = lazy(() => import('./AttachClientsModal'));
-const DetachClientsModal = lazy(() => import('./DetachClientsModal'));
-const AddClientsToGroupModal = lazy(() => import('./AddClientsToGroupModal'));
+import { InboundList } from './list';
+import { LazyMount } from '@/components/utility';
+const InboundFormModal = lazy(() => import('./form/InboundFormModal'));
+const InboundInfoModal = lazy(() => import('./info/InboundInfoModal'));
+const QrCodeModal = lazy(() => import('./qr/QrCodeModal'));
+const AttachClientsModal = lazy(() => import('./clients/AttachClientsModal'));
+const DetachClientsModal = lazy(() => import('./clients/DetachClientsModal'));
+const AddClientsToGroupModal = lazy(() => import('./clients/AddClientsToGroupModal'));
 
 type RowAction =
   | 'edit'
@@ -176,7 +176,7 @@ export default function InboundsPage() {
     setPromptInitial(opts.value || '');
     setPromptHandler(() => opts.confirm);
     setPromptOpen(true);
-  }, []);
+  }, [t]);
 
   const onPromptConfirm = useCallback(async (value: string) => {
     if (!promptHandler) {
@@ -329,7 +329,7 @@ export default function InboundsPage() {
         return false;
       },
     });
-  }, [openPrompt, refresh]);
+  }, [openPrompt, refresh, t]);
 
   const onAddInbound = useCallback(() => {
     setFormMode('add');
@@ -356,6 +356,36 @@ export default function InboundsPage() {
       },
     });
   }, [modal, refresh, t]);
+
+  const confirmBulkDelete = useCallback((ids: number[]) => new Promise<boolean>((resolve) => {
+    if (ids.length === 0) {
+      resolve(false);
+      return;
+    }
+    modal.confirm({
+      title: t('pages.inbounds.bulkDeleteConfirmTitle', { count: ids.length }),
+      content: t('pages.inbounds.bulkDeleteConfirmContent'),
+      okText: t('delete'),
+      okType: 'danger',
+      cancelText: t('cancel'),
+      onOk: async () => {
+        const msg = await HttpUtil.post('/panel/api/inbounds/bulkDel', { ids }, { headers: { 'Content-Type': 'application/json' } });
+        const obj = (msg?.obj ?? {}) as { deleted?: number; skipped?: { id: number; reason: string }[] };
+        const ok = obj.deleted ?? 0;
+        const skipped = obj.skipped ?? [];
+        if (msg?.success && skipped.length === 0) {
+          messageApi.success(t('pages.inbounds.toasts.bulkDeleted', { count: ok }));
+        } else {
+          const firstError = skipped[0]?.reason ?? msg?.msg ?? '';
+          const base = t('pages.inbounds.toasts.bulkDeletedMixed', { ok, failed: skipped.length });
+          messageApi.warning(firstError ? `${base} — ${firstError}` : base);
+        }
+        await refresh();
+        resolve(true);
+      },
+      onCancel: () => resolve(false),
+    });
+  }), [modal, refresh, t, messageApi]);
 
   const confirmResetTraffic = useCallback((dbInbound: DBInbound) => {
     modal.confirm({
@@ -446,7 +476,7 @@ export default function InboundsPage() {
       default:
         messageApi.info(`General action "${key}" — coming in a later 5f subphase`);
     }
-  }, [modal, importInbound, exportAllLinks, exportAllSubs, refresh, messageApi]);
+  }, [modal, importInbound, exportAllLinks, exportAllSubs, refresh, messageApi, t]);
 
   const onRowAction = useCallback(async ({ key, dbInbound }: { key: RowAction; dbInbound: DBInbound }) => {
     // Actions that touch per-client secrets (uuid, password, flow, ...) need
@@ -567,6 +597,7 @@ export default function InboundsPage() {
                       onAddInbound={onAddInbound}
                       onGeneralAction={onGeneralAction}
                       onRowAction={({ key, dbInbound }) => onRowAction({ key, dbInbound: dbInbound as unknown as DBInbound })}
+                      onBulkDelete={confirmBulkDelete}
                     />
                   </Col>
                 </Row>

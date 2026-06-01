@@ -246,7 +246,10 @@
       "importDatabaseError": "Terjadi kesalahan saat mengimpor database",
       "readDatabaseError": "Terjadi kesalahan saat membaca database",
       "getDatabaseError": "Terjadi kesalahan saat mengambil database",
-      "getConfigError": "Terjadi kesalahan saat mengambil file konfigurasi"
+      "getConfigError": "Terjadi kesalahan saat mengambil file konfigurasi",
+      "backupPostgresNote": "Panel ini berjalan di PostgreSQL. «Cadangkan» mengunduh arsip pg_dump (.dump) dan «Pulihkan» memuatnya kembali dengan pg_restore. Server memerlukan alat klien PostgreSQL (pg_dump dan pg_restore) terpasang.",
+      "exportDatabasePgDesc": "Klik untuk mengunduh dump PostgreSQL (.dump) dari basis data Anda saat ini ke perangkat Anda.",
+      "importDatabasePgDesc": "Klik untuk memilih dan mengunggah berkas .dump guna memulihkan basis data PostgreSQL Anda. Ini menggantikan semua data saat ini."
     },
     "inbounds": {
       "title": "Inbound",
@@ -296,6 +299,10 @@
       "deleteConfirmContent": "Tindakan ini menghapus inbound beserta semua kliennya. Tidak dapat dibatalkan.",
       "resetConfirmTitle": "Reset trafik \"{remark}\"?",
       "resetConfirmContent": "Mengatur ulang counter unggah/unduh ke 0 untuk inbound ini.",
+      "selectedCount": "{count} dipilih",
+      "selectAll": "Pilih semua",
+      "bulkDeleteConfirmTitle": "Hapus {count} inbound?",
+      "bulkDeleteConfirmContent": "Tindakan ini menghapus inbound yang dipilih beserta semua kliennya. Tidak dapat dibatalkan.",
       "cloneConfirmTitle": "Klon inbound \"{remark}\"?",
       "cloneConfirmContent": "Membuat salinan dengan port baru dan daftar klien kosong.",
       "delAllClients": "Hapus Semua Klien",
@@ -421,6 +428,8 @@
         "inboundsUpdateSuccess": "Inbound berhasil diperbarui",
         "inboundUpdateSuccess": "Inbound berhasil diperbarui",
         "inboundCreateSuccess": "Inbound berhasil dibuat",
+        "bulkDeleted": "{count} inbound dihapus",
+        "bulkDeletedMixed": "{ok} dihapus, {failed} gagal",
         "inboundDeleteSuccess": "Inbound berhasil dihapus",
         "inboundClientAddSuccess": "Klien inbound telah ditambahkan",
         "inboundClientDeleteSuccess": "Klien inbound telah dihapus",
@@ -433,7 +442,10 @@
         "trafficGetError": "Gagal mendapatkan data lalu lintas",
         "getNewX25519CertError": "Terjadi kesalahan saat mendapatkan sertifikat X25519.",
         "getNewmldsa65Error": "Terjadi kesalahan saat mendapatkan sertifikat mldsa65.",
-        "getNewVlessEncError": "Terjadi kesalahan saat mendapatkan sertifikat VlessEnc."
+        "getNewVlessEncError": "Terjadi kesalahan saat mendapatkan sertifikat VlessEnc.",
+        "invalidClientField": "Klien {client}: kolom {field} — {reason}",
+        "invalidField": "{field} — {reason}",
+        "moreIssues": "{message}  (+{count} lainnya)"
       },
       "form": {
         "moveUp": "Naik",
@@ -646,6 +658,8 @@
       "subId": "ID Langganan",
       "online": "Online",
       "email": "Email",
+      "emailInvalidChars": "Email tidak boleh mengandung spasi, '/', '\\', atau karakter kontrol",
+      "subIdInvalidChars": "ID langganan tidak boleh mengandung spasi, '/', '\\', atau karakter kontrol",
       "group": "Grup",
       "groupDesc": "Label logis untuk mengelompokkan klien terkait (mis. tim, pelanggan, wilayah). Dapat difilter dari toolbar.",
       "groupPlaceholder": "mis. customer-a",
