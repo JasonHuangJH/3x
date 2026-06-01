@@ -320,6 +320,11 @@
       "attachClientsSearchPlaceholder": "Cari email atau komentar",
       "attachClientsStatusDisabled": "Dinonaktifkan",
       "attachClientsSelectedCount": "{selected} dari {total} dipilih",
+      "attachExistingClients": "Lampirkan klien yang ada…",
+      "attachExistingTitle": "Lampirkan klien yang ada ke «{remark}»",
+      "attachExistingDesc": "Melampirkan klien yang ada ({count} tersedia) ke inbound ini — UUID/kata sandi sama dan trafik bersama. Klien yang sudah ada di sini dilewati.",
+      "attachExistingNoClients": "Belum ada klien. Buat klien dulu, lalu lampirkan di sini.",
+      "attachExistingStatusAttached": "Sudah dilampirkan",
       "detachClients": "Lepas klien",
       "detachClientsTitle": "Lepas klien dari «{remark}»",
       "detachClientsDesc": "Menghapus klien terpilih hanya dari inbound ini. Catatan klien tetap dipertahankan (gunakan Delete untuk menghapus sepenuhnya). Sumber memiliki total {count} klien.",
@@ -832,6 +837,12 @@
       "panelVersion": "Versi panel",
       "actions": "Aksi",
       "probe": "Probe Sekarang",
+      "updatePanel": "Perbarui Panel",
+      "updateSelected": "Perbarui Terpilih ({count})",
+      "updateAvailable": "Pembaruan tersedia",
+      "upToDate": "Terbaru",
+      "updateConfirmTitle": "Perbarui {count} node ke versi terbaru?",
+      "updateConfirmContent": "Setiap node terpilih mengunduh rilis terbaru dan memulai ulang. Hanya node aktif dan online yang diperbarui.",
       "testConnection": "Tes Koneksi",
       "connectionOk": "Koneksi OK ({ms} ms)",
       "connectionFailed": "Koneksi gagal",
@@ -853,7 +864,10 @@
         "deleted": "Node dihapus",
         "test": "Tes koneksi",
         "fillRequired": "Nama, alamat, port, dan token API wajib diisi",
-        "probeFailed": "Probe gagal"
+        "probeFailed": "Probe gagal",
+        "updateStarted": "Pembaruan panel dimulai",
+        "updateResult": "Pembaruan dipicu pada {ok} node, {failed} gagal",
+        "updateNoneEligible": "Pilih minimal satu node online dan aktif"
       }
     },
     "settings": {

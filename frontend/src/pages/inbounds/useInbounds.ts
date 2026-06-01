@@ -142,14 +142,7 @@ export function useInbounds() {
       const clientStats = Array.isArray((dbInbound as { clientStats?: unknown }).clientStats)
         ? (dbInbound as unknown as { clientStats: { email: string; total: number; up: number; down: number; expiryTime: number }[] }).clientStats
         : [];
-      const allClients = inbound?.clients || [];
-      const statsEmails = new Set<string>();
-      for (const s of clientStats) {
-        if (s && s.email) statsEmails.add(s.email);
-      }
-      const clients = clientStats.length > 0
-        ? allClients.filter((c) => c && c.email && statsEmails.has(c.email))
-        : allClients;
+      const clients = inbound?.clients || [];
       const active: string[] = [];
       const deactive: string[] = [];
       const depleted: string[] = [];
@@ -248,7 +241,9 @@ export function useInbounds() {
     if (lastOnlineQuery.data) setLastOnlineMap(lastOnlineQuery.data);
   }, [lastOnlineQuery.data]);
 
-  const fetched = slimQuery.data !== undefined && defaultsQuery.data !== undefined;
+  const fetched = (slimQuery.data !== undefined || slimQuery.isError) && (defaultsQuery.data !== undefined || defaultsQuery.isError);
+  const fetchErrorSource = slimQuery.error || defaultsQuery.error;
+  const fetchError = fetchErrorSource ? (fetchErrorSource as Error).message : '';
 
   const refresh = useCallback(async () => {
     // Invalidate at the inbounds root so both `slim` (this page's list)
@@ -373,6 +368,7 @@ export function useInbounds() {
 
   return {
     fetched,
+    fetchError,
     dbInbounds,
     clientCount,
     onlineClients,
