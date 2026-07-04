@@ -376,12 +376,13 @@ export default function ClientFormModal({
   const inboundOptions = useMemo(
     () => (inbounds || [])
       .filter((ib) => MULTI_CLIENT_PROTOCOLS.has(ib.protocol || ''))
+      .filter((ib) => ib.enable || (form.inboundIds || []).includes(ib.id))
       .map((ib) => ({
         label: formatInboundLabel(ib.tag, ib.remark),
         value: ib.id,
         title: formatInboundLabel(ib.tag, ib.remark),
       })),
-    [inbounds],
+    [inbounds, form.inboundIds],
   );
 
   const linkRows = useMemo(() => form.externalLinks.filter((r) => r.kind === 'link'), [form.externalLinks]);
@@ -492,6 +493,13 @@ export default function ClientFormModal({
       if (form.wgPreSharedKey) {
         clientPayload.preSharedKey = form.wgPreSharedKey;
       }
+      const allowedIPs = form.wgAllowedIPs
+        .split(',')
+        .map((s) => s.trim())
+        .filter((s) => s !== '');
+      if (allowedIPs.length > 0) {
+        clientPayload.allowedIPs = allowedIPs;
+      }
     }
 
     const externalLinks: ExternalLinkInput[] = form.externalLinks
@@ -582,7 +590,7 @@ export default function ClientFormModal({
                               onChange={(e) => update('email', e.target.value)}
                             />
                             {!isEdit && (
-                              <Button icon={<ReloadOutlined />} onClick={() => update('email', RandomUtil.randomLowerAndNum(12))} />
+                              <Button aria-label={t('regenerate')} icon={<ReloadOutlined />} onClick={() => update('email', RandomUtil.randomLowerAndNum(12))} />
                             )}
                           </Space.Compact>
                         </Form.Item>
@@ -603,7 +611,7 @@ export default function ClientFormModal({
                                   onChange={(v) => update('limitIp', Number(v) || 0)} />
                                 {isEdit && (
                                   <Tooltip title={t('pages.clients.ipLog')}>
-                                    <Button icon={<EyeOutlined />} loading={ipsLoading} onClick={openIpsModal}>
+                                    <Button aria-label={t('pages.clients.ipLog')} icon={<EyeOutlined />} loading={ipsLoading} onClick={openIpsModal}>
                                       {clientIps.length > 0 ? clientIps.length : ''}
                                     </Button>
                                   </Tooltip>
@@ -717,7 +725,7 @@ export default function ClientFormModal({
                     </Form.Item>
 
                     <Form.Item>
-                      <Switch checked={form.enable} onChange={(v) => update('enable', v)} />
+                      <Switch aria-label={t('enable')} checked={form.enable} onChange={(v) => update('enable', v)} />
                       <span style={{ marginLeft: 8 }}>{t('enable')}</span>
                     </Form.Item>
                   </>
@@ -731,28 +739,28 @@ export default function ClientFormModal({
                     <Form.Item label={t('pages.clients.uuid')}>
                       <Space.Compact style={{ display: 'flex' }}>
                         <Input value={form.uuid} style={{ flex: 1 }} onChange={(e) => update('uuid', e.target.value)} />
-                        <Button icon={<ReloadOutlined />} onClick={() => update('uuid', RandomUtil.randomUUID())} />
+                        <Button aria-label={t('regenerate')} icon={<ReloadOutlined />} onClick={() => update('uuid', RandomUtil.randomUUID())} />
                       </Space.Compact>
                     </Form.Item>
 
                     <Form.Item label={t('pages.clients.password')}>
                       <Space.Compact style={{ display: 'flex' }}>
                         <Input value={form.password} style={{ flex: 1 }} onChange={(e) => update('password', e.target.value)} />
-                        <Button icon={<ReloadOutlined />} onClick={regeneratePassword} />
+                        <Button aria-label={t('regenerate')} icon={<ReloadOutlined />} onClick={regeneratePassword} />
                       </Space.Compact>
                     </Form.Item>
 
                     <Form.Item label={t('pages.clients.subId')}>
                       <Space.Compact style={{ display: 'flex' }}>
                         <Input value={form.subId} style={{ flex: 1 }} onChange={(e) => update('subId', e.target.value)} />
-                        <Button icon={<ReloadOutlined />} onClick={() => update('subId', RandomUtil.randomLowerAndNum(16))} />
+                        <Button aria-label={t('regenerate')} icon={<ReloadOutlined />} onClick={() => update('subId', RandomUtil.randomLowerAndNum(16))} />
                       </Space.Compact>
                     </Form.Item>
 
                     <Form.Item label={t('pages.clients.hysteriaAuth')}>
                       <Space.Compact style={{ display: 'flex' }}>
                         <Input value={form.auth} style={{ flex: 1 }} onChange={(e) => update('auth', e.target.value)} />
-                        <Button icon={<ReloadOutlined />} onClick={() => update('auth', RandomUtil.randomLowerAndNum(16))} />
+                        <Button aria-label={t('regenerate')} icon={<ReloadOutlined />} onClick={() => update('auth', RandomUtil.randomLowerAndNum(16))} />
                       </Space.Compact>
                     </Form.Item>
 
@@ -790,7 +798,7 @@ export default function ClientFormModal({
                                 update('wgPublicKey', priv ? Wireguard.generateKeypair(priv).publicKey : '');
                               }}
                             />
-                            <Button icon={<ReloadOutlined />} onClick={regenerateWireguardKeys} />
+                            <Button aria-label={t('regenerate')} icon={<ReloadOutlined />} onClick={regenerateWireguardKeys} />
                           </Space.Compact>
                         </Form.Item>
                         <Form.Item label={t('pages.clients.wireguardPublicKey')}>
@@ -802,11 +810,16 @@ export default function ClientFormModal({
                             onChange={(e) => update('wgPreSharedKey', e.target.value)}
                           />
                         </Form.Item>
-                        {isEdit && form.wgAllowedIPs && (
-                          <Form.Item label={t('pages.clients.wireguardAllowedIPs')}>
-                            <Input value={form.wgAllowedIPs} disabled />
-                          </Form.Item>
-                        )}
+                        <Form.Item
+                          label={t('pages.clients.wireguardAllowedIPs')}
+                          extra={t('pages.clients.wireguardAllowedIPsHint')}
+                        >
+                          <Input
+                            value={form.wgAllowedIPs}
+                            placeholder="10.0.0.2/32"
+                            onChange={(e) => update('wgAllowedIPs', e.target.value)}
+                          />
+                        </Form.Item>
                       </>
                     )}
                   </>
@@ -831,11 +844,12 @@ export default function ClientFormModal({
                         <div key={row.key} style={{ display: 'flex', gap: 8, marginBottom: 8 }}>
                           <Input
                             value={row.value}
+                            aria-label="vless:// · vmess:// · trojan:// · ss:// · hysteria2:// · wireguard://"
                             onChange={(e) => updateExternalLinkRow(row.key, e.target.value)}
                             placeholder="vless:// · vmess:// · trojan:// · ss:// · hysteria2:// · wireguard://"
                           />
                           <Tooltip title={t('delete')}>
-                            <Button danger icon={<DeleteOutlined />} onClick={() => removeExternalLinkRow(row.key)} />
+                            <Button aria-label={t('delete')} danger icon={<DeleteOutlined />} onClick={() => removeExternalLinkRow(row.key)} />
                           </Tooltip>
                         </div>
                       ))}
@@ -851,11 +865,12 @@ export default function ClientFormModal({
                         <div key={row.key} style={{ display: 'flex', gap: 8, marginBottom: 8 }}>
                           <Input
                             value={row.value}
+                            aria-label="https://provider.example/sub/…"
                             onChange={(e) => updateExternalLinkRow(row.key, e.target.value)}
                             placeholder="https://provider.example/sub/…"
                           />
                           <Tooltip title={t('delete')}>
-                            <Button danger icon={<DeleteOutlined />} onClick={() => removeExternalLinkRow(row.key)} />
+                            <Button aria-label={t('delete')} danger icon={<DeleteOutlined />} onClick={() => removeExternalLinkRow(row.key)} />
                           </Tooltip>
                         </div>
                       ))}

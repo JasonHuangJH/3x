@@ -1545,7 +1545,8 @@ export const SCHEMAS: Record<string, unknown> = {
         "type": "string"
       },
       "vlessRoute": {
-        "description": "VlessRoute is a free-form port/range routing spec (e.g. \"53,443,1000-2000\");\nstored verbatim, format-validated on the frontend.",
+        "description": "Single VLESS route value (0-65535) baked into the subscription UUID's 3rd\ngroup (bytes 6-7), which xray reads via net.PortFromBytes(id[6:8]). Empty = none.",
+        "example": "443",
         "type": "string"
       }
     },
@@ -1797,9 +1798,20 @@ export const SCHEMAS: Record<string, unknown> = {
   },
   "InboundOption": {
     "properties": {
+      "enable": {
+        "example": true,
+        "type": "boolean"
+      },
       "id": {
         "example": 1,
         "type": "integer"
+      },
+      "listen": {
+        "type": "string"
+      },
+      "nodeAddress": {
+        "description": "Share-host resolution inputs, mirroring the subscription's\nresolveInboundAddress so the clients page renders a node-managed WireGuard\nEndpoint that points at the node, not the master panel. NodeAddress is the\nhosting node's externally reachable address (empty for this panel's own\ninbounds); Listen and ShareAddrStrategy/ShareAddr feed the same\nnode→listen→custom fallback the share/QR links already use.",
+        "type": "string"
       },
       "nodeId": {
         "description": "Hosting node; nil for this panel's own inbounds. Lets the clients\npage map a node filter onto inbound IDs (#4997).",
@@ -1816,6 +1828,12 @@ export const SCHEMAS: Record<string, unknown> = {
       },
       "remark": {
         "example": "VLESS-443",
+        "type": "string"
+      },
+      "shareAddr": {
+        "type": "string"
+      },
+      "shareAddrStrategy": {
         "type": "string"
       },
       "ssMethod": {
@@ -1840,6 +1858,7 @@ export const SCHEMAS: Record<string, unknown> = {
       }
     },
     "required": [
+      "enable",
       "id",
       "port",
       "protocol",
@@ -2117,6 +2136,34 @@ export const SCHEMAS: Record<string, unknown> = {
       "tag",
       "total",
       "up"
+    ],
+    "type": "object"
+  },
+  "PanelUpdateStatus": {
+    "description": "PanelUpdateStatus reports the outcome of the most recently launched panel\nself-update. RunID lets the caller confirm this status belongs to the\nupdate it started rather than a stale result left over from an earlier\nrun; State is one of \"pending\", \"success\", or \"failed\". RunID is a decimal\nstring, not a JSON number: it's a formatted UnixNano timestamp, and\nJavaScript's number type can't represent that precisely (it exceeds\nNumber.MAX_SAFE_INTEGER), which would let two different runs round to the\nsame value on the wire and defeat the whole point of this field.",
+    "properties": {
+      "exitCode": {
+        "example": 0,
+        "type": "integer"
+      },
+      "finishedAt": {
+        "example": 1735689612,
+        "type": "integer"
+      },
+      "runId": {
+        "example": "1735689600123456789",
+        "type": "string"
+      },
+      "state": {
+        "example": "success",
+        "type": "string"
+      }
+    },
+    "required": [
+      "exitCode",
+      "finishedAt",
+      "runId",
+      "state"
     ],
     "type": "object"
   },
