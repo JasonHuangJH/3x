@@ -54,7 +54,7 @@ func scaleSubSizes(t *testing.T, def ...int) []int {
 		return def
 	}
 	var out []int
-	for _, part := range strings.Split(raw, ",") {
+	for part := range strings.SplitSeq(raw, ",") {
 		part = strings.TrimSpace(part)
 		if part == "" {
 			continue
@@ -212,7 +212,7 @@ func TestGetSubsScale(t *testing.T) {
 			jsonSvc := NewSubJsonService("", "", "", &SubService{})
 			start = time.Now()
 			for range reps {
-				body, _, err := jsonSvc.GetJson(scaleTargetSubId, "sub.example.com")
+				body, _, err := jsonSvc.GetJson(scaleTargetSubId, "sub.example.com", false)
 				if err != nil {
 					t.Fatalf("GetJson: %v", err)
 				}

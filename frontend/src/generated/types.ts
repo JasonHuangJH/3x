@@ -41,6 +41,8 @@ export interface AllSetting {
   smtpEnable: boolean;
   smtpEnabledEvents: string;
   smtpEncryptionType: string;
+  smtpFrom: string;
+  smtpFromName: string;
   smtpHost: string;
   smtpMemory: number;
   smtpPassword: string;
@@ -49,11 +51,13 @@ export interface AllSetting {
   smtpUsername: string;
   subAnnounce: string;
   subCertFile: string;
+  subClashAutoDetect: boolean;
   subClashEnable: boolean;
   subClashEnableRouting: boolean;
   subClashPath: string;
   subClashRules: string;
   subClashURI: string;
+  subClashUserAgentRegex: string;
   subDomain: string;
   subEnable: boolean;
   subEnableRouting: boolean;
@@ -61,12 +65,15 @@ export interface AllSetting {
   subHideSettings: boolean;
   subIncyEnableRouting: boolean;
   subIncyRoutingRules: string;
+  subJsonAlwaysArray: boolean;
+  subJsonAutoDetect: boolean;
   subJsonEnable: boolean;
   subJsonFinalMask: string;
   subJsonMux: string;
   subJsonPath: string;
   subJsonRules: string;
   subJsonURI: string;
+  subJsonUserAgentRegex: string;
   subKeyFile: string;
   subListen: string;
   subPath: string;
@@ -145,6 +152,8 @@ export interface AllSettingView {
   smtpEnable: boolean;
   smtpEnabledEvents: string;
   smtpEncryptionType: string;
+  smtpFrom: string;
+  smtpFromName: string;
   smtpHost: string;
   smtpMemory: number;
   smtpPassword: string;
@@ -153,11 +162,13 @@ export interface AllSettingView {
   smtpUsername: string;
   subAnnounce: string;
   subCertFile: string;
+  subClashAutoDetect: boolean;
   subClashEnable: boolean;
   subClashEnableRouting: boolean;
   subClashPath: string;
   subClashRules: string;
   subClashURI: string;
+  subClashUserAgentRegex: string;
   subDomain: string;
   subEnable: boolean;
   subEnableRouting: boolean;
@@ -165,12 +176,15 @@ export interface AllSettingView {
   subHideSettings: boolean;
   subIncyEnableRouting: boolean;
   subIncyRoutingRules: string;
+  subJsonAlwaysArray: boolean;
+  subJsonAutoDetect: boolean;
   subJsonEnable: boolean;
   subJsonFinalMask: string;
   subJsonMux: string;
   subJsonPath: string;
   subJsonRules: string;
   subJsonURI: string;
+  subJsonUserAgentRegex: string;
   subKeyFile: string;
   subListen: string;
   subPath: string;
@@ -224,6 +238,7 @@ export interface ApiTokenView {
 }
 
 export interface Client {
+  adTag?: string;
   allowedIPs?: string[];
   auth?: string;
   comment: string;
@@ -242,6 +257,7 @@ export interface Client {
   publicKey?: string;
   reset: number;
   reverse?: ClientReverse | null;
+  secret?: string;
   security: string;
   subId: string;
   tgId: number;
@@ -257,6 +273,7 @@ export interface ClientInbound {
 }
 
 export interface ClientRecord {
+  adTag: string;
   allowedIPs: string;
   auth: string;
   comment: string;
@@ -275,6 +292,7 @@ export interface ClientRecord {
   publicKey: string;
   reset: number;
   reverse: unknown;
+  secret: string;
   security: string;
   subId: string;
   tgId: number;
@@ -321,6 +339,7 @@ export interface Host {
   excludeFromSubTypes: string[];
   finalMask: string;
   fingerprint: string;
+  groupId: string;
   hostHeader: string;
   id: number;
   inboundId: number;
@@ -344,6 +363,40 @@ export interface Host {
   sortOrder: number;
   tags: string[];
   updatedAt: number;
+  verifyPeerCertByName: string;
+  vlessRoute: string;
+}
+
+export interface HostGroup {
+  allowInsecure: boolean;
+  alpn: string[];
+  echConfigList: string;
+  excludeFromSubTypes: string[];
+  finalMask: string;
+  fingerprint: string;
+  groupId: string;
+  hostHeader: string;
+  hosts: string[];
+  inboundIds: number[];
+  isDisabled: boolean;
+  isHidden: boolean;
+  keepSniBlank: boolean;
+  mihomoIpVersion: string;
+  mihomoX25519: boolean;
+  muxParams: string;
+  nodeGuids: string[];
+  overrideSniFromAddress: boolean;
+  path: string;
+  pinnedPeerCertSha256: string[];
+  port: number;
+  remark: string;
+  security: string;
+  serverDescription: string;
+  shuffleHost: boolean;
+  sni: string;
+  sockoptParams: string;
+  sortOrder: number;
+  tags: string[];
   verifyPeerCertByName: string;
   vlessRoute: string;
 }
@@ -396,6 +449,7 @@ export interface InboundOption {
   enable: boolean;
   id: number;
   listen?: string;
+  mtprotoDomain?: string;
   nodeAddress?: string;
   nodeId?: number | null;
   port: number;

@@ -61,10 +61,13 @@ import { useNodesQuery } from '@/api/queries/useNodesQuery';
 import { useDatepicker } from '@/hooks/useDatepicker';
 import type { ClientRecord, InboundOption, ExternalLink, ExternalLinkInput } from '@/hooks/useClients';
 import ClientTrafficCell from '@/components/clients/ClientTrafficCell';
+import ClientSpeedTag, { isActiveSpeed } from '@/components/clients/ClientSpeedTag';
+import ClientCardComment from '@/components/clients/ClientCardComment';
 import AppSidebar from '@/layouts/AppSidebar';
 import { IntlUtil, SizeFormatter } from '@/utils';
 import { setMessageInstance } from '@/utils/messageBus';
 import { LazyMount } from '@/components/utility';
+import { SPEED_COLUMN_WIDTH, SPEED_TAG_CLASS_NAME, SPEED_TAG_STYLE } from '@/components/utility/speedTagStyle';
 const ClientFormModal = lazy(() => import('./ClientFormModal'));
 const ClientInfoModal = lazy(() => import('./ClientInfoModal'));
 const ClientQrModal = lazy(() => import('./ClientQrModal'));
@@ -209,6 +212,7 @@ export default function ClientsPage() {
     tgBotEnable, expireDiff, trafficDiff, pageSize,
     create, update, remove, bulkDelete, bulkAdjust, bulkEnable, bulkDisable, bulkAddToGroup, bulkRemoveFromGroup, attach, setExternalLinks, bulkAttach, detach, bulkDetach,
     resetTraffic, resetAllTraffics, delDepleted, delOrphans, exportClients, importClients, setEnable,
+    clientSpeed,
     applyTrafficEvent, applyClientStatsEvent,
     refresh,
     hydrate,
@@ -816,7 +820,7 @@ export default function ClientsPage() {
         <div className="email-cell">
           <span className="email">{record.email}</span>
           {record.subId && <span className="sub" title={record.subId}>{record.subId}</span>}
-          {record.comment && <span className="sub" title={record.comment}>{record.comment}</span>}
+          <ClientCardComment comment={record.comment} className="sub" />
         </div>
       ),
     },
@@ -903,6 +907,19 @@ export default function ClientsPage() {
       ),
     },
     {
+      title: t('pages.clients.speed'),
+      key: 'speed',
+      width: SPEED_COLUMN_WIDTH,
+      align: 'center',
+      render: (_v, record) => {
+        const speed = clientSpeed[record.email];
+        if (!isActiveSpeed(speed)) {
+          return <Tag color="default" className={SPEED_TAG_CLASS_NAME} style={SPEED_TAG_STYLE}>—</Tag>;
+        }
+        return <ClientSpeedTag speed={speed} tableCell />;
+      },
+    },
+    {
       title: t('pages.clients.remaining'),
       key: 'remaining',
       width: 130,
@@ -919,7 +936,7 @@ export default function ClientsPage() {
       ),
     },
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  ], [t, togglingEmail, clientBucket, isOnline, inboundsById, filters, allGroups, datepicker, trafficDiff]);
+  ], [t, togglingEmail, clientBucket, isOnline, inboundsById, filters, allGroups, datepicker, trafficDiff, clientSpeed]);
 
   const tablePagination = {
     current: currentPage,
@@ -1199,7 +1216,7 @@ export default function ClientsPage() {
                           value={sortValueFor(sortColumn, sortOrder)}
                           aria-label={t('sort')}
                           size={isMobile ? 'small' : 'middle'}
-                          suffixIcon={<SortAscendingOutlined />}
+                          suffix={<SortAscendingOutlined />}
                           style={{ minWidth: isMobile ? 130 : 200 }}
                           onChange={(value) => {
                             const opt = SORT_OPTIONS.find((o) => o.value === value);
@@ -1420,6 +1437,7 @@ export default function ClientsPage() {
                                       </Dropdown>
                                     </div>
                                   </div>
+                                  <ClientCardComment comment={row.comment} />
                                   <ClientTrafficCell
                                     compact
                                     up={row.traffic?.up}
@@ -1428,6 +1446,15 @@ export default function ClientsPage() {
                                     enabled={row.enable}
                                     trafficDiff={trafficDiff}
                                   />
+                                  {(() => {
+                                    const speed = clientSpeed[row.email];
+                                    if (!isActiveSpeed(speed)) return null;
+                                    return (
+                                      <div className="client-card-speed">
+                                        <ClientSpeedTag speed={speed} />
+                                      </div>
+                                    );
+                                  })()}
                                 </div>
                               );
                             })}

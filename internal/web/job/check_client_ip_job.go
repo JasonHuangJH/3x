@@ -9,6 +9,7 @@ import (
 	"os/exec"
 	"runtime"
 	"sort"
+	"strings"
 	"time"
 
 	"github.com/mhsanaei/3x-ui/v3/internal/database"
@@ -32,6 +33,7 @@ type IPWithTimestamp struct {
 // simply skips the run (the bundled core always supports it).
 type CheckClientIpJob struct {
 	disAllowedIps []string
+	bannedSeen    map[string]int64
 	xrayService   service.XrayService
 }
 
@@ -357,9 +359,7 @@ func (j *CheckClientIpJob) processObserved(observed map[string]map[string]int64,
 	for _, d := range disconnects {
 		clients, cached := clientsCache[d.inbound.Id]
 		if !cached {
-			settings := map[string][]model.Client{}
-			_ = json.Unmarshal([]byte(d.inbound.Settings), &settings)
-			clients = settings["clients"]
+			clients, _ = service.ParseInboundSettingsClients(d.inbound.Settings)
 			clientsCache[d.inbound.Id] = clients
 		}
 		j.disconnectClientTemporarily(d.inbound, d.email, clients)
@@ -511,7 +511,8 @@ func (j *CheckClientIpJob) updateInboundClientIps(tx *gorm.DB, inboundClientIps 
 
 	// historical db-only ips are excluded from this count on purpose.
 	keptLive, bannedLive := selectIpsToBan(liveIps, limitIp)
-	if len(bannedLive) > 0 {
+	actionable := j.filterAdvancedSinceLastBan(clientEmail, bannedLive)
+	if len(actionable) > 0 {
 		shouldCleanLog = true
 		banned = true
 
@@ -527,7 +528,7 @@ func (j *CheckClientIpJob) updateInboundClientIps(tx *gorm.DB, inboundClientIps 
 		// filter.d/3x-ipl.conf with
 		//   failregex = \[LIMIT_IP\]\s*Email\s*=\s*<F-USER>.+</F-USER>\s*\|\|\s*Disconnecting OLD IP\s*=\s*<ADDR>\s*\|\|\s*Timestamp\s*=\s*\d+
 		// don't change the wording.
-		for _, ipTime := range bannedLive {
+		for _, ipTime := range actionable {
 			j.disAllowedIps = append(j.disAllowedIps, ipTime.IP)
 			ipLogger.Printf("[LIMIT_IP] Email = %s || Disconnecting OLD IP = %s || Timestamp = %d", clientEmail, ipTime.IP, ipTime.Timestamp)
 		}
@@ -552,6 +553,35 @@ func (j *CheckClientIpJob) updateInboundClientIps(tx *gorm.DB, inboundClientIps 
 	}
 
 	return shouldCleanLog, banned
+}
+
+// filterAdvancedSinceLastBan keeps only banned pairs whose lastSeen advanced since
+// the previous ban: the core refreshes lastSeen solely on a new dispatch, so a
+// frozen value is a dead connection it hasn't reaped yet, not a reconnect.
+func (j *CheckClientIpJob) filterAdvancedSinceLastBan(email string, banned []IPWithTimestamp) []IPWithTimestamp {
+	if j.bannedSeen == nil {
+		j.bannedSeen = make(map[string]int64)
+	}
+	current := make(map[string]struct{}, len(banned))
+	actionable := make([]IPWithTimestamp, 0, len(banned))
+	for _, ipTime := range banned {
+		key := email + "|" + ipTime.IP
+		current[key] = struct{}{}
+		if last, ok := j.bannedSeen[key]; ok && ipTime.Timestamp <= last {
+			continue
+		}
+		j.bannedSeen[key] = ipTime.Timestamp
+		actionable = append(actionable, ipTime)
+	}
+	prefix := email + "|"
+	for key := range j.bannedSeen {
+		if strings.HasPrefix(key, prefix) {
+			if _, still := current[key]; !still {
+				delete(j.bannedSeen, key)
+			}
+		}
+	}
+	return actionable
 }
 
 // disconnectClientTemporarily removes and re-adds a client to force disconnect banned connections
@@ -702,11 +732,11 @@ func (j *CheckClientIpJob) getInboundByEmail(clientEmail string) (*model.Inbound
 		return nil, listErr
 	}
 	for i := range candidates {
-		settings := map[string][]model.Client{}
-		if jsonErr := json.Unmarshal([]byte(candidates[i].Settings), &settings); jsonErr != nil {
+		clients, jsonErr := service.ParseInboundSettingsClients(candidates[i].Settings)
+		if jsonErr != nil {
 			continue
 		}
-		for _, client := range settings["clients"] {
+		for _, client := range clients {
 			if client.Email == clientEmail {
 				return &candidates[i], nil
 			}

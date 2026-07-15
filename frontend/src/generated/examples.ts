@@ -35,6 +35,8 @@ export const EXAMPLES: Record<string, unknown> = {
     "smtpEnable": false,
     "smtpEnabledEvents": "",
     "smtpEncryptionType": "",
+    "smtpFrom": "",
+    "smtpFromName": "",
     "smtpHost": "",
     "smtpMemory": 0,
     "smtpPassword": "",
@@ -43,11 +45,13 @@ export const EXAMPLES: Record<string, unknown> = {
     "smtpUsername": "",
     "subAnnounce": "",
     "subCertFile": "",
+    "subClashAutoDetect": false,
     "subClashEnable": false,
     "subClashEnableRouting": false,
     "subClashPath": "",
     "subClashRules": "",
     "subClashURI": "",
+    "subClashUserAgentRegex": "",
     "subDomain": "",
     "subEnable": false,
     "subEnableRouting": false,
@@ -55,12 +59,15 @@ export const EXAMPLES: Record<string, unknown> = {
     "subHideSettings": false,
     "subIncyEnableRouting": false,
     "subIncyRoutingRules": "",
+    "subJsonAlwaysArray": false,
+    "subJsonAutoDetect": false,
     "subJsonEnable": false,
     "subJsonFinalMask": "",
     "subJsonMux": "",
     "subJsonPath": "",
     "subJsonRules": "",
     "subJsonURI": "",
+    "subJsonUserAgentRegex": "",
     "subKeyFile": "",
     "subListen": "",
     "subPath": "",
@@ -138,6 +145,8 @@ export const EXAMPLES: Record<string, unknown> = {
     "smtpEnable": false,
     "smtpEnabledEvents": "",
     "smtpEncryptionType": "",
+    "smtpFrom": "",
+    "smtpFromName": "",
     "smtpHost": "",
     "smtpMemory": 0,
     "smtpPassword": "",
@@ -146,11 +155,13 @@ export const EXAMPLES: Record<string, unknown> = {
     "smtpUsername": "",
     "subAnnounce": "",
     "subCertFile": "",
+    "subClashAutoDetect": false,
     "subClashEnable": false,
     "subClashEnableRouting": false,
     "subClashPath": "",
     "subClashRules": "",
     "subClashURI": "",
+    "subClashUserAgentRegex": "",
     "subDomain": "",
     "subEnable": false,
     "subEnableRouting": false,
@@ -158,12 +169,15 @@ export const EXAMPLES: Record<string, unknown> = {
     "subHideSettings": false,
     "subIncyEnableRouting": false,
     "subIncyRoutingRules": "",
+    "subJsonAlwaysArray": false,
+    "subJsonAutoDetect": false,
     "subJsonEnable": false,
     "subJsonFinalMask": "",
     "subJsonMux": "",
     "subJsonPath": "",
     "subJsonRules": "",
     "subJsonURI": "",
+    "subJsonUserAgentRegex": "",
     "subKeyFile": "",
     "subListen": "",
     "subPath": "",
@@ -214,6 +228,7 @@ export const EXAMPLES: Record<string, unknown> = {
     "token": "new-token-string"
   },
   "Client": {
+    "adTag": "0123456789abcdef0123456789abcdef",
     "allowedIPs": [
       ""
     ],
@@ -234,6 +249,7 @@ export const EXAMPLES: Record<string, unknown> = {
     "publicKey": "",
     "reset": 0,
     "reverse": null,
+    "secret": "ee1234567890abcdef1234567890abcd7777772e636c6f7564666c6172652e636f6d",
     "security": "",
     "subId": "",
     "tgId": 0,
@@ -247,6 +263,7 @@ export const EXAMPLES: Record<string, unknown> = {
     "inboundId": 0
   },
   "ClientRecord": {
+    "adTag": "",
     "allowedIPs": "",
     "auth": "",
     "comment": "",
@@ -265,6 +282,7 @@ export const EXAMPLES: Record<string, unknown> = {
     "publicKey": "",
     "reset": 0,
     "reverse": null,
+    "secret": "",
     "security": "",
     "subId": "",
     "tgId": 0,
@@ -310,6 +328,7 @@ export const EXAMPLES: Record<string, unknown> = {
     ],
     "finalMask": "",
     "fingerprint": "",
+    "groupId": "",
     "hostHeader": "",
     "id": 1,
     "inboundId": 1,
@@ -341,6 +360,53 @@ export const EXAMPLES: Record<string, unknown> = {
     "updatedAt": 0,
     "verifyPeerCertByName": "",
     "vlessRoute": "443"
+  },
+  "HostGroup": {
+    "allowInsecure": false,
+    "alpn": [
+      ""
+    ],
+    "echConfigList": "",
+    "excludeFromSubTypes": [
+      ""
+    ],
+    "finalMask": "",
+    "fingerprint": "",
+    "groupId": "",
+    "hostHeader": "",
+    "hosts": [
+      ""
+    ],
+    "inboundIds": [
+      0
+    ],
+    "isDisabled": false,
+    "isHidden": false,
+    "keepSniBlank": false,
+    "mihomoIpVersion": "dual",
+    "mihomoX25519": false,
+    "muxParams": "",
+    "nodeGuids": [
+      ""
+    ],
+    "overrideSniFromAddress": false,
+    "path": "",
+    "pinnedPeerCertSha256": [
+      ""
+    ],
+    "port": 0,
+    "remark": "",
+    "security": "same",
+    "serverDescription": "",
+    "shuffleHost": false,
+    "sni": "",
+    "sockoptParams": "",
+    "sortOrder": 0,
+    "tags": [
+      ""
+    ],
+    "verifyPeerCertByName": "",
+    "vlessRoute": ""
   },
   "Inbound": {
     "clientStats": [
@@ -402,6 +468,7 @@ export const EXAMPLES: Record<string, unknown> = {
     "enable": true,
     "id": 1,
     "listen": "",
+    "mtprotoDomain": "",
     "nodeAddress": "",
     "nodeId": null,
     "port": 443,
