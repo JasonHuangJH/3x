@@ -116,8 +116,9 @@ func (s *InboundService) addClientTraffic(tx *gorm.DB, traffics []*xray.ClientTr
 	// attached to a local inbound. The old `inbound_id NOT IN (node inbounds)`
 	// filter dropped the local traffic of a client attached to both a node and the
 	// mother inbound whenever the node inbound happened to be attached first — its
-	// shared row then carried the node inbound's id (AddClientStat uses OnConflict
-	// DoNothing and never refreshes it), so the local poll skipped it entirely.
+	// shared row then carried the node inbound's id (AddClientStat used to use
+	// OnConflict DoNothing and never refreshed it; it now refreshes inbound_id on
+	// conflict, but this filter was removed rather than relying on that ordering).
 	err = tx.Model(xray.ClientTraffic{}).
 		Where("email IN (?)", emails).
 		Find(&dbClientTraffics).Error
@@ -286,6 +287,23 @@ func (s *InboundService) adjustTraffics(tx *gorm.DB, dbClientTraffics []*xray.Cl
 	return dbClientTraffics, newExpiryByEmail, nil
 }
 
+// apiUserFromClient prepares a stored client object for the runtime AddUser
+// call. The copy matters twice over: the stored object keeps being mutated and
+// marshalled back into the inbound's settings, which must not gain an API-only
+// key, and shadowsocks clients carry no cipher of their own — it lives on the
+// inbound, and without it the API cannot tell which of xray's two shadowsocks
+// account types the running inbound expects.
+func apiUserFromClient(client map[string]any, cipher string) map[string]any {
+	user := maps.Clone(client)
+	if user == nil {
+		user = map[string]any{}
+	}
+	if cipher != "" {
+		user["cipher"] = cipher
+	}
+	return user
+}
+
 func (s *InboundService) autoRenewClients(tx *gorm.DB) (bool, int64, error) {
 	// check for time expired
 	var traffics []*xray.ClientTraffic
@@ -366,6 +384,10 @@ func (s *InboundService) autoRenewClients(tx *gorm.DB) (bool, int64, error) {
 		if len(clients) == 0 {
 			continue
 		}
+		cipher := ""
+		if inbounds[inbound_index].Protocol == model.Shadowsocks {
+			cipher, _ = settings["method"].(string)
+		}
 		for client_index := range clients {
 			c := clients[client_index].(map[string]any)
 			email, _ := c["email"].(string)
@@ -392,7 +414,7 @@ func (s *InboundService) autoRenewClients(tx *gorm.DB) (bool, int64, error) {
 					}{
 						protocol: string(inbounds[inbound_index].Protocol),
 						tag:      inbounds[inbound_index].Tag,
-						client:   c,
+						client:   apiUserFromClient(c, cipher),
 					})
 			}
 			clients[client_index] = any(c)
@@ -430,8 +452,8 @@ func (s *InboundService) autoRenewClients(tx *gorm.DB) (bool, int64, error) {
 	if err = clearGlobalTraffic(tx, renewEmails...); err != nil {
 		return false, 0, err
 	}
-	if p != nil {
-		err1 = s.xrayApi.Init(p.GetAPIPort())
+	if process := currentXrayProcess(); process != nil {
+		err1 = s.xrayApi.Init(process.GetAPIPort())
 		if err1 != nil {
 			return true, int64(len(traffics)), nil
 		}
@@ -446,9 +468,28 @@ func (s *InboundService) autoRenewClients(tx *gorm.DB) (bool, int64, error) {
 	return needRestart, int64(len(traffics)), nil
 }
 
-// AddClientStat inserts a per-client accounting row, no-op on email
-// conflict. Xray reports traffic per email, so the surviving row acts as
-// the shared accumulator for inbounds that re-use the same identity.
+// AddClientStat inserts a per-client accounting row, or refreshes the
+// config-derived columns on an email conflict. Xray reports traffic per
+// email, so the surviving row also acts as the shared accumulator for
+// inbounds that re-use the same identity — every call for that identity
+// (one per attached inbound) carries the same enable/expiry/reset/total,
+// so re-asserting them here is idempotent for that legitimate case.
+//
+// The conflict path matters on its own for a second reason: an inbound
+// delete detaches its clients (InboundService.DelInbound) without deleting
+// their client_traffics row, by design — mirroring ClientService.Detach,
+// which intentionally leaves a fully-detached client's row in place so a
+// later Attach can resume it with its accumulated traffic intact. If that
+// same email is instead reused for a freshly (re)created client, the new
+// config's enable/expiry/reset/total must win over whatever the orphaned
+// row still holds; DoNothing left them stale indefinitely (#5958).
+//
+// up/down are deliberately excluded from the refresh: they are the
+// accumulated traffic totals, and zeroing them here would erase real usage
+// every time an existing, actively-used client is attached to one more
+// inbound. One tradeoff this does not resolve: a genuinely new client that
+// happens to reuse an orphaned email still inherits that row's leftover
+// up/down, since nothing at this call site can tell the two cases apart.
 func (s *InboundService) AddClientStat(tx *gorm.DB, inboundId int, client *model.Client) error {
 	clientTraffic := xray.ClientTraffic{
 		InboundId:  inboundId,
@@ -458,8 +499,10 @@ func (s *InboundService) AddClientStat(tx *gorm.DB, inboundId int, client *model
 		Enable:     client.Enable,
 		Reset:      client.Reset,
 	}
-	return tx.Clauses(clause.OnConflict{Columns: []clause.Column{{Name: "email"}}, DoNothing: true}).
-		Create(&clientTraffic).Error
+	return tx.Clauses(clause.OnConflict{
+		Columns:   []clause.Column{{Name: "email"}},
+		DoUpdates: clause.AssignmentColumns([]string{"inbound_id", "total", "expiry_time", "enable", "reset"}),
+	}).Create(&clientTraffic).Error
 }
 
 func (s *InboundService) UpdateClientStat(tx *gorm.DB, email string, client *model.Client) error {
@@ -581,7 +624,7 @@ func (s *InboundService) resetClientTrafficLocked(id int, clientEmail string) (b
 					if err != nil {
 						return false, err
 					}
-					cipher = oldSettings["method"].(string)
+					cipher, _ = oldSettings["method"].(string)
 				}
 				err1 := rt.AddUser(context.Background(), inbound, map[string]any{
 					"email":    client.Email,

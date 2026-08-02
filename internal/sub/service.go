@@ -40,9 +40,10 @@ type SubService struct {
 	// usageShown tracks, per client email, whether the info part of the template
 	// has already been emitted this request, so it appears on the first body
 	// link only. Per-request state; reset in PrepareForRequest.
-	usageShown     map[string]bool
-	inboundService service.InboundService
-	settingService service.SettingService
+	usageShown             map[string]bool
+	showIdentityOnAllLinks bool
+	inboundService         service.InboundService
+	settingService         service.SettingService
 	// nodesByID is populated per request from the Node table so
 	// resolveInboundAddress can return the node's address for any
 	// inbound whose NodeID is set. Keeps the per-link host derivation
@@ -196,6 +197,10 @@ func (s *SubService) loadRemarkSettings() {
 	s.datepicker, err = s.settingService.GetDatepicker()
 	if err != nil {
 		s.datepicker = "gregorian"
+	}
+	s.showIdentityOnAllLinks, err = s.settingService.GetSubShowIdentityOnAllLinks()
+	if err != nil {
+		s.showIdentityOnAllLinks = false
 	}
 }
 
@@ -644,8 +649,8 @@ func (s *SubService) genWireguardLink(inbound *model.Inbound, email string) stri
 			params["publickey"] = pub
 		}
 	}
-	if len(client.AllowedIPs) > 0 && client.AllowedIPs[0] != "" {
-		params["address"] = client.AllowedIPs[0]
+	if joined := strings.Join(client.AllowedIPs, ","); joined != "" {
+		params["address"] = joined
 	}
 	if mtu, ok := settings["mtu"].(float64); ok && mtu > 0 {
 		params["mtu"] = strconv.Itoa(int(mtu))
@@ -1025,11 +1030,10 @@ func (s *SubService) genHysteriaLink(inbound *model.Inbound, email string) strin
 		}
 	}
 
-	// salamander obfs (Hysteria2). The panel-side link generator already
-	// emits these; keep the subscription output in sync so a client has
-	// the obfs password to match the server.
+	// salamander obfs (Hysteria2). Emit only the standard URI fields;
+	// the non-standard fm=<json> finalmask dump breaks mihomo and other
+	// Hysteria2 clients that reject unknown query params.
 	if finalmask, ok := stream["finalmask"].(map[string]any); ok {
-		applyFinalMaskParams(finalmask, params)
 		if udpMasks, ok := finalmask["udp"].([]any); ok {
 			for _, m := range udpMasks {
 				mask, _ := m.(map[string]any)
@@ -1626,12 +1630,6 @@ func applyExternalProxyTLSToStream(ep map[string]any, stream map[string]any, sec
 	}
 	if fp, ok := ep["fingerprint"].(string); ok && fp != "" {
 		tlsSettings["fingerprint"] = fp
-		settings, _ := tlsSettings["settings"].(map[string]any)
-		if settings == nil {
-			settings = map[string]any{}
-			tlsSettings["settings"] = settings
-		}
-		settings["fingerprint"] = fp
 	}
 	if alpn, ok := externalProxyALPNList(ep["alpn"]); ok {
 		tlsSettings["alpn"] = alpn
@@ -2018,6 +2016,15 @@ func buildXhttpExtra(xhttp map[string]any) map[string]any {
 				extra[renamed] = v
 			}
 		}
+	}
+	// Older clients still read the pre-#6258 names from the subscription
+	// extra JSON. Emit aliases after lifting legacy inputs so both old and
+	// new clients can consume the same link.
+	if v, ok := extra["sessionIDPlacement"].(string); ok && len(v) > 0 {
+		extra["sessionPlacement"] = v
+	}
+	if v, ok := extra["sessionIDKey"].(string); ok && len(v) > 0 {
+		extra["sessionKey"] = v
 	}
 
 	for _, field := range []string{"uplinkChunkSize"} {
@@ -2455,6 +2462,7 @@ type PageData struct {
 	BasePath      string
 	SId           string
 	Enabled       bool
+	IsOnline      bool
 	Download      string
 	Upload        string
 	Total         string
@@ -2478,18 +2486,29 @@ type PageData struct {
 // ResolveRequest extracts scheme and host info from request/headers consistently.
 // ResolveRequest extracts scheme, host, and header information from an HTTP request.
 func (s *SubService) ResolveRequest(c *gin.Context) (scheme string, host string, hostWithPort string, hostHeader string) {
+	trusted := s.forwardedHeadersTrusted(c)
+	if !trusted {
+		warnSuppressedForwardedHeaders(c)
+	}
+	forwarded := func(name string) string {
+		if !trusted {
+			return ""
+		}
+		return c.GetHeader(name)
+	}
+
 	// scheme
 	scheme = "http"
-	if c.Request.TLS != nil || strings.EqualFold(c.GetHeader("X-Forwarded-Proto"), "https") {
+	if c.Request.TLS != nil || strings.EqualFold(forwarded("X-Forwarded-Proto"), "https") {
 		scheme = "https"
 	}
 
 	// base host (no port)
-	if h, err := getHostFromXFH(c.GetHeader("X-Forwarded-Host")); err == nil && h != "" {
+	if h, err := getHostFromXFH(forwarded("X-Forwarded-Host")); err == nil && h != "" {
 		host = h
 	}
 	if host == "" {
-		host = c.GetHeader("X-Real-IP")
+		host = forwarded("X-Real-IP")
 	}
 	if host == "" {
 		var err error
@@ -2500,7 +2519,7 @@ func (s *SubService) ResolveRequest(c *gin.Context) (scheme string, host string,
 	}
 
 	// host:port for URLs
-	hostWithPort = c.GetHeader("X-Forwarded-Host")
+	hostWithPort = forwarded("X-Forwarded-Host")
 	if hostWithPort == "" {
 		hostWithPort = c.Request.Host
 	}
@@ -2509,9 +2528,9 @@ func (s *SubService) ResolveRequest(c *gin.Context) (scheme string, host string,
 	}
 
 	// header display host
-	hostHeader = c.GetHeader("X-Forwarded-Host")
+	hostHeader = forwarded("X-Forwarded-Host")
 	if hostHeader == "" {
-		hostHeader = c.GetHeader("X-Real-IP")
+		hostHeader = forwarded("X-Real-IP")
 	}
 	if hostHeader == "" {
 		hostHeader = host
@@ -2619,6 +2638,7 @@ func (s *SubService) BuildPageData(subId string, hostHeader string, traffic xray
 		BasePath:      basePath,
 		SId:           subId,
 		Enabled:       traffic.Enable,
+		IsOnline:      subIsOnline(emails, s.inboundService.GetOnlineClients()),
 		Download:      download,
 		Upload:        upload,
 		Total:         total,
@@ -2638,6 +2658,22 @@ func (s *SubService) BuildPageData(subId string, hostHeader string, traffic xray
 		Result:        pageLinks,
 		Emails:        pageEmails,
 	}
+}
+
+func subIsOnline(subEmails, onlineEmails []string) bool {
+	if len(subEmails) == 0 || len(onlineEmails) == 0 {
+		return false
+	}
+	onlineSet := make(map[string]struct{}, len(onlineEmails))
+	for _, email := range onlineEmails {
+		onlineSet[email] = struct{}{}
+	}
+	for _, email := range subEmails {
+		if _, online := onlineSet[email]; online {
+			return true
+		}
+	}
+	return false
 }
 
 func getHostFromXFH(s string) (string, error) {

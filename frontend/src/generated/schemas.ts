@@ -83,6 +83,11 @@ export const SCHEMAS: Record<string, unknown> = {
       "ldapVlessField": {
         "type": "string"
       },
+      "outboundDownThreshold": {
+        "maximum": 100,
+        "minimum": 1,
+        "type": "integer"
+      },
       "pageSize": {
         "maximum": 1000,
         "minimum": 0,
@@ -239,6 +244,9 @@ export const SCHEMAS: Record<string, unknown> = {
       "subRoutingRules": {
         "type": "string"
       },
+      "subShowIdentityOnAllLinks": {
+        "type": "boolean"
+      },
       "subSupportUrl": {
         "type": "string"
       },
@@ -361,6 +369,7 @@ export const SCHEMAS: Record<string, unknown> = {
       "ldapUserAttr",
       "ldapUserFilter",
       "ldapVlessField",
+      "outboundDownThreshold",
       "pageSize",
       "panelOutbound",
       "remarkTemplate",
@@ -409,6 +418,7 @@ export const SCHEMAS: Record<string, unknown> = {
       "subPort",
       "subProfileUrl",
       "subRoutingRules",
+      "subShowIdentityOnAllLinks",
       "subSupportUrl",
       "subThemeDir",
       "subTitle",
@@ -544,6 +554,11 @@ export const SCHEMAS: Record<string, unknown> = {
       "ldapVlessField": {
         "type": "string"
       },
+      "outboundDownThreshold": {
+        "maximum": 100,
+        "minimum": 1,
+        "type": "integer"
+      },
       "pageSize": {
         "maximum": 1000,
         "minimum": 0,
@@ -700,6 +715,9 @@ export const SCHEMAS: Record<string, unknown> = {
       "subRoutingRules": {
         "type": "string"
       },
+      "subShowIdentityOnAllLinks": {
+        "type": "boolean"
+      },
       "subSupportUrl": {
         "type": "string"
       },
@@ -829,6 +847,7 @@ export const SCHEMAS: Record<string, unknown> = {
       "ldapUserAttr",
       "ldapUserFilter",
       "ldapVlessField",
+      "outboundDownThreshold",
       "pageSize",
       "panelOutbound",
       "remarkTemplate",
@@ -877,6 +896,7 @@ export const SCHEMAS: Record<string, unknown> = {
       "subPort",
       "subProfileUrl",
       "subRoutingRules",
+      "subShowIdentityOnAllLinks",
       "subSupportUrl",
       "subThemeDir",
       "subTitle",
@@ -1822,6 +1842,13 @@ export const SCHEMAS: Record<string, unknown> = {
         ],
         "type": "string"
       },
+      "trafficResetDay": {
+        "description": "Day of month for monthly traffic resets",
+        "example": 1,
+        "maximum": 31,
+        "minimum": 1,
+        "type": "integer"
+      },
       "up": {
         "description": "Upload traffic in bytes",
         "format": "int64",
@@ -1848,6 +1875,7 @@ export const SCHEMAS: Record<string, unknown> = {
       "tag",
       "total",
       "trafficReset",
+      "trafficResetDay",
       "up"
     ],
     "type": "object"
@@ -2020,10 +2048,6 @@ export const SCHEMAS: Record<string, unknown> = {
       "allowPrivateAddress": {
         "type": "boolean"
       },
-      "apiToken": {
-        "example": "abcdef0123456789",
-        "type": "string"
-      },
       "basePath": {
         "example": "/",
         "type": "string"
@@ -2194,7 +2218,6 @@ export const SCHEMAS: Record<string, unknown> = {
       "activeCount",
       "address",
       "allowPrivateAddress",
-      "apiToken",
       "basePath",
       "clientCount",
       "configDirty",
@@ -2205,6 +2228,315 @@ export const SCHEMAS: Record<string, unknown> = {
       "disabledCount",
       "enable",
       "guid",
+      "id",
+      "inboundCount",
+      "inboundSyncMode",
+      "inboundTags",
+      "lastError",
+      "lastHeartbeat",
+      "latencyMs",
+      "memPct",
+      "name",
+      "netDown",
+      "netUp",
+      "onlineCount",
+      "outboundTag",
+      "panelVersion",
+      "pinnedCertSha256",
+      "port",
+      "remark",
+      "scheme",
+      "status",
+      "tlsVerifyMode",
+      "updatedAt",
+      "uptimeSecs",
+      "xrayError",
+      "xrayState",
+      "xrayVersion"
+    ],
+    "type": "object"
+  },
+  "NodeMutationRequest": {
+    "description": "NodeMutationRequest is the node write/probe contract. ApiToken is accepted\nonly as input. On update, nil means keep the stored token; replacement and\nclearing are explicit and mutually exclusive.",
+    "properties": {
+      "address": {
+        "type": "string"
+      },
+      "allowPrivateAddress": {
+        "type": "boolean"
+      },
+      "apiToken": {
+        "nullable": true,
+        "type": "string"
+      },
+      "basePath": {
+        "type": "string"
+      },
+      "clearApiToken": {
+        "type": "boolean"
+      },
+      "enable": {
+        "type": "boolean"
+      },
+      "id": {
+        "type": "integer"
+      },
+      "inboundSyncMode": {
+        "enum": [
+          "all",
+          "selected"
+        ],
+        "type": "string"
+      },
+      "inboundTags": {
+        "items": {
+          "type": "string"
+        },
+        "type": "array"
+      },
+      "name": {
+        "type": "string"
+      },
+      "outboundTag": {
+        "type": "string"
+      },
+      "pinnedCertSha256": {
+        "type": "string"
+      },
+      "port": {
+        "maximum": 65535,
+        "minimum": 1,
+        "type": "integer"
+      },
+      "remark": {
+        "type": "string"
+      },
+      "scheme": {
+        "enum": [
+          "http",
+          "https"
+        ],
+        "type": "string"
+      },
+      "tlsVerifyMode": {
+        "enum": [
+          "verify",
+          "skip",
+          "pin",
+          "mtls"
+        ],
+        "type": "string"
+      }
+    },
+    "required": [
+      "address",
+      "allowPrivateAddress",
+      "basePath",
+      "enable",
+      "id",
+      "inboundSyncMode",
+      "inboundTags",
+      "name",
+      "outboundTag",
+      "pinnedCertSha256",
+      "port",
+      "remark",
+      "scheme",
+      "tlsVerifyMode"
+    ],
+    "type": "object"
+  },
+  "NodeView": {
+    "description": "NodeView is the browser/API read contract for nodes. Credentials are\nwrite-only: responses expose only whether a node has a token configured.",
+    "properties": {
+      "activeCount": {
+        "example": 20,
+        "type": "integer"
+      },
+      "address": {
+        "example": "node.example.com",
+        "type": "string"
+      },
+      "allowPrivateAddress": {
+        "example": false,
+        "type": "boolean"
+      },
+      "basePath": {
+        "example": "/",
+        "type": "string"
+      },
+      "clientCount": {
+        "example": 25,
+        "type": "integer"
+      },
+      "configDirty": {
+        "example": false,
+        "type": "boolean"
+      },
+      "configDirtyAt": {
+        "example": 0,
+        "format": "int64",
+        "type": "integer"
+      },
+      "cpuPct": {
+        "example": 12.5,
+        "type": "number"
+      },
+      "createdAt": {
+        "example": 1700000000,
+        "format": "int64",
+        "type": "integer"
+      },
+      "depletedCount": {
+        "example": 1,
+        "type": "integer"
+      },
+      "disabledCount": {
+        "example": 2,
+        "type": "integer"
+      },
+      "enable": {
+        "example": true,
+        "type": "boolean"
+      },
+      "guid": {
+        "example": "node-guid",
+        "type": "string"
+      },
+      "hasApiToken": {
+        "example": true,
+        "type": "boolean"
+      },
+      "id": {
+        "example": 1,
+        "type": "integer"
+      },
+      "inboundCount": {
+        "example": 3,
+        "type": "integer"
+      },
+      "inboundSyncMode": {
+        "example": "all",
+        "type": "string"
+      },
+      "inboundTags": {
+        "example": [
+          "in-443-tcp"
+        ],
+        "items": {
+          "type": "string"
+        },
+        "type": "array"
+      },
+      "lastError": {
+        "type": "string"
+      },
+      "lastHeartbeat": {
+        "example": 1700000000,
+        "format": "int64",
+        "type": "integer"
+      },
+      "latencyMs": {
+        "example": 42,
+        "type": "integer"
+      },
+      "memPct": {
+        "example": 45.2,
+        "type": "number"
+      },
+      "name": {
+        "example": "edge-1",
+        "type": "string"
+      },
+      "netDown": {
+        "example": 1048576,
+        "format": "int64",
+        "type": "integer"
+      },
+      "netUp": {
+        "example": 2097152,
+        "format": "int64",
+        "type": "integer"
+      },
+      "onlineCount": {
+        "example": 5,
+        "type": "integer"
+      },
+      "outboundTag": {
+        "example": "direct",
+        "type": "string"
+      },
+      "panelVersion": {
+        "example": "v3.x.x",
+        "type": "string"
+      },
+      "parentGuid": {
+        "type": "string"
+      },
+      "pinnedCertSha256": {
+        "type": "string"
+      },
+      "port": {
+        "example": 2053,
+        "type": "integer"
+      },
+      "remark": {
+        "example": "Primary edge",
+        "type": "string"
+      },
+      "scheme": {
+        "example": "https",
+        "type": "string"
+      },
+      "status": {
+        "example": "online",
+        "type": "string"
+      },
+      "tlsVerifyMode": {
+        "example": "verify",
+        "type": "string"
+      },
+      "transitive": {
+        "example": false,
+        "type": "boolean"
+      },
+      "updatedAt": {
+        "example": 1700003600,
+        "format": "int64",
+        "type": "integer"
+      },
+      "uptimeSecs": {
+        "example": 86400,
+        "format": "int64",
+        "type": "integer"
+      },
+      "xrayError": {
+        "type": "string"
+      },
+      "xrayState": {
+        "example": "running",
+        "type": "string"
+      },
+      "xrayVersion": {
+        "example": "25.10.31",
+        "type": "string"
+      }
+    },
+    "required": [
+      "activeCount",
+      "address",
+      "allowPrivateAddress",
+      "basePath",
+      "clientCount",
+      "configDirty",
+      "configDirtyAt",
+      "cpuPct",
+      "createdAt",
+      "depletedCount",
+      "disabledCount",
+      "enable",
+      "guid",
+      "hasApiToken",
       "id",
       "inboundCount",
       "inboundSyncMode",

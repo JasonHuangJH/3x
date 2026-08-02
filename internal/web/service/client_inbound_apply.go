@@ -476,7 +476,7 @@ func (s *ClientService) addInboundClient(inboundSvc *InboundService, data *model
 				}
 				cipher := ""
 				if oldInbound.Protocol == "shadowsocks" {
-					cipher = oldSettings["method"].(string)
+					cipher, _ = oldSettings["method"].(string)
 				}
 				err1 := rt.AddUser(context.Background(), oldInbound, map[string]any{
 					"email":        client.Email,
@@ -807,7 +807,9 @@ func (s *ClientService) UpdateInboundClient(inboundSvc *InboundService, data *mo
 		}
 		// Rename the client record in the same transaction as the settings JSON
 		// so no concurrent SyncInbound can see one renamed without the other.
-		if len(oldEmail) > 0 && !strings.EqualFold(oldEmail, clients[0].Email) {
+		// Byte-level compare (not EqualFold): case-only edits must rename too,
+		// otherwise SyncInbound's case-sensitive lookup creates a duplicate row.
+		if len(oldEmail) > 0 && oldEmail != clients[0].Email {
 			var renameTaken int64
 			if e := tx.Model(&model.ClientRecord{}).Where("email = ?", clients[0].Email).Count(&renameTaken).Error; e != nil {
 				return e
@@ -856,7 +858,7 @@ func (s *ClientService) UpdateInboundClient(inboundSvc *InboundService, data *mo
 				if clients[0].Enable {
 					cipher := ""
 					if oldInbound.Protocol == "shadowsocks" {
-						cipher = oldSettings["method"].(string)
+						cipher, _ = oldSettings["method"].(string)
 					}
 					err1 := rt.AddUser(context.Background(), oldInbound, map[string]any{
 						"email":        clients[0].Email,
